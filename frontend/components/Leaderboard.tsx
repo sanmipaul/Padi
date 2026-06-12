@@ -27,23 +27,21 @@ export default function Leaderboard() {
   const rows = TOP.map((addr, i) => ({ addr, wins: wins[i]?.data ? Number(wins[i].data) : 0 })).sort((a, b) => b.wins - a.wins);
   const medals = ["🥇", "🥈", "🥉"];
 
-  function refresh() {
-    refetchPrize();
-    refetchGames();
-    refetchMy();
-  }
+  function refresh() { refetchPrize(); refetchGames(); refetchMy(); }
 
   return (
     <div className="space-y-4">
       <div className="bg-yellow-900/20 border border-yellow-700 rounded-2xl p-4 text-center">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs text-yellow-500 uppercase tracking-wide">Weekly Prize Pool</span>
-          <button onClick={refresh} className="text-xs text-gray-500 hover:text-gray-300">↻ refresh</button>
+          <button onClick={refresh} className="text-xs text-gray-500 hover:text-gray-300">↻</button>
         </div>
         <p className="text-3xl font-bold text-yellow-400">
           {prize ? (Number(prize) / 1e18).toFixed(2) : "0.00"} USDM
         </p>
-        <p className="text-xs text-gray-400 mt-1">Top players at week's end share this</p>
+        <p className="text-xs text-gray-400 mt-1">
+          Funded by 0.5% of wagers + AI wins. Distributed weekly to top players.
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -72,13 +70,20 @@ export default function Leaderboard() {
                 <span className="text-lg">{medals[i]}</span>
                 <p className="flex-1 text-sm font-mono text-gray-300">
                   {addr.slice(0, 6)}…{addr.slice(-4)}
-                  {addr.toLowerCase() === address?.toLowerCase() && <span className="ml-1 text-xs text-red-400"> (you)</span>}
+                  {addr.toLowerCase() === address?.toLowerCase() && <span className="ml-1 text-xs text-red-400">(you)</span>}
                 </p>
                 <p className="text-white font-bold">{wins} <span className="text-xs text-gray-400">wins</span></p>
               </div>
             ))}
           </div>
         )}
+      </div>
+
+      <div className="bg-gray-900 rounded-2xl p-4 text-xs text-gray-500 space-y-1">
+        <p className="font-semibold text-gray-400">How the pool grows</p>
+        <p>• 0.5% of every won wager → pool</p>
+        <p>• 100% of lost wagers (AI wins) → pool</p>
+        <p>• Anyone can donate via addToPrizePool</p>
       </div>
     </div>
   );
