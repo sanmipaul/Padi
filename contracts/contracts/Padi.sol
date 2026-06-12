@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+/// @title Padi — on-chain Ludo vs AI on Celo
+/// @notice Single-player game against 1-3 AI opponents. All game logic executes on-chain.
 contract Padi is Ownable, ReentrancyGuard {
     IERC20 public immutable usdm;
 
@@ -41,6 +43,7 @@ contract Padi is Ownable, ReentrancyGuard {
     event PieceMoved(uint256 indexed gameId, uint8 seat, uint8 piece, uint8 from, uint8 to);
     event PieceCaptured(uint256 indexed gameId, uint8 capturerSeat, uint8 capturedSeat, uint8 piece);
     event GameFinished(uint256 indexed gameId, address indexed winner, uint256 prize);
+    event PrizeDistributed(address indexed recipient, uint256 amount);
 
     uint8[8] private SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
 
@@ -122,6 +125,33 @@ contract Padi is Ownable, ReentrancyGuard {
     function getPlayerGames(address p) external view returns (uint256[] memory) {
         return playerGames[p];
     }
+
+    // ─── Admin ────────────────────────────────────────────────────────────────
+
+    function withdrawPlatformFee(address to) external onlyOwner {
+        uint256 amount = platformFeeBalance;
+        platformFeeBalance = 0;
+        usdm.transfer(to, amount);
+    }
+
+    function addToPrizePool(uint256 amount) external {
+        require(usdm.transferFrom(msg.sender, address(this), amount), "transfer failed");
+        weeklyPrizePool += amount;
+    }
+
+    function distributePrize(address[] calldata recipients, uint256[] calldata amounts) external onlyOwner {
+        require(recipients.length == amounts.length, "length mismatch");
+        uint256 total = 0;
+        for (uint256 i = 0; i < amounts.length; i++) total += amounts[i];
+        require(total <= weeklyPrizePool, "exceeds pool");
+        weeklyPrizePool -= total;
+        for (uint256 i = 0; i < recipients.length; i++) {
+            usdm.transfer(recipients[i], amounts[i]);
+            emit PrizeDistributed(recipients[i], amounts[i]);
+        }
+    }
+
+    // ─── Internal helpers ─────────────────────────────────────────────────────
 
     function _isAllFinished(Game storage g, uint8 seat) internal view returns (bool) {
         for (uint8 p = 0; p < PIECES; p++) {
