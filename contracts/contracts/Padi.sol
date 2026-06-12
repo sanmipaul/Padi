@@ -120,8 +120,45 @@ contract Padi is Ownable, ReentrancyGuard {
         return false;
     }
 
+    function _isSafe(uint8 globalPos) internal view returns (bool) {
+        for (uint8 i = 0; i < 8; i++) {
+            if (SAFE_SQUARES[i] == globalPos) return true;
+        }
+        return false;
+    }
+
+    function _globalPos(uint8 seat, uint8 relPos) internal pure returns (uint8) {
+        if (relPos == 0 || relPos > BOARD_SIZE) return relPos;
+        uint8[4] memory offsets = [0, 13, 26, 39];
+        return uint8((offsets[seat] + relPos - 1) % BOARD_SIZE);
+    }
+
     function _applyMove(uint256 gameId, uint8 seat, uint8 pieceIdx, uint8 newPos) internal {
-        games[gameId].pieces[seat][pieceIdx] = newPos;
+        Game storage g = games[gameId];
+        g.pieces[seat][pieceIdx] = newPos;
+        // Only capture on main board squares
+        if (newPos >= 1 && newPos <= BOARD_SIZE) {
+            uint8 myGlobal = _globalPos(seat, newPos);
+            if (!_isSafe(myGlobal)) {
+                _capture(gameId, seat, myGlobal);
+            }
+        }
+    }
+
+    function _capture(uint256 gameId, uint8 attackerSeat, uint8 globalPos) internal {
+        Game storage g = games[gameId];
+        uint8 totalSeats = 1 + g.aiCount;
+        for (uint8 s = 0; s < totalSeats; s++) {
+            if (s == attackerSeat) continue;
+            for (uint8 p = 0; p < PIECES; p++) {
+                uint8 pos = g.pieces[s][p];
+                if (pos == 0 || pos > BOARD_SIZE) continue;
+                if (_globalPos(s, pos) == globalPos) {
+                    g.pieces[s][p] = AT_BASE;
+                    emit PieceCaptured(gameId, attackerSeat, s, p);
+                }
+            }
+        }
     }
 
     function _runAITurns(uint256 gameId) internal {}
