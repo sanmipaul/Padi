@@ -10,7 +10,7 @@ import {
 import { parseUnits } from "viem";
 import { PADI_ADDRESS, PADI_ABI, ERC20_ABI, USDM_ADDRESS } from "@/lib/contracts";
 
-const MIN_WAGER = 0.01; // USDM
+const MIN_WAGER = 0.01;
 
 export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) => void }) {
   const { address } = useAccount();
@@ -21,9 +21,8 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
   const [wagerError, setWagerError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
-  const { data: prizePool } = useReadContract({
-    address: contract, abi: PADI_ABI, functionName: "weeklyPrizePool",
-  });
+  const { data: prizePool } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "weeklyPrizePool" });
+  const { data: totalGamesCount } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "totalGames" });
   const { data: myGames } = useReadContract({
     address: contract, abi: PADI_ABI, functionName: "getPlayerGames",
     args: address ? [address] : undefined,
@@ -44,61 +43,48 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
 
   function validateWager(val: string) {
     const n = parseFloat(val);
-    if (val && (isNaN(n) || n < 0)) {
-      setWagerError("Enter a valid amount");
-    } else if (n > 0 && n < MIN_WAGER) {
-      setWagerError(`Minimum wager is ${MIN_WAGER} USDM`);
-    } else {
-      setWagerError(null);
-    }
+    if (val && (isNaN(n) || n < 0)) setWagerError("Enter a valid amount");
+    else if (n > 0 && n < MIN_WAGER) setWagerError(`Minimum wager is ${MIN_WAGER} USDM`);
+    else setWagerError(null);
   }
 
   function handleCreate() {
     if (wagerError) return;
     if (wagerBN > 0n) {
       setStatus("Approving USDM...");
-      approve({
-        address: USDM_ADDRESS as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: "approve",
-        args: [contract, wagerBN],
-      });
+      approve({ address: USDM_ADDRESS as `0x${string}`, abi: ERC20_ABI, functionName: "approve", args: [contract, wagerBN] });
     } else {
       setStatus("Creating game...");
-      create({
-        address: contract, abi: PADI_ABI, functionName: "createGame",
-        args: [aiCount, 0n],
-      });
+      create({ address: contract, abi: PADI_ABI, functionName: "createGame", args: [aiCount, 0n] });
     }
   }
 
   if (approveOk && !createTx) {
     setStatus("Creating game...");
-    create({
-      address: contract, abi: PADI_ABI, functionName: "createGame",
-      args: [aiCount, wagerBN],
-    });
+    create({ address: contract, abi: PADI_ABI, functionName: "createGame", args: [aiCount, wagerBN] });
   }
 
   if (createOk && createReceipt) {
     const log = createReceipt.logs[0];
-    if (log) {
-      try { onEnterGame(BigInt(log.topics[1] || "0")); } catch { /* */ }
-    }
+    if (log) { try { onEnterGame(BigInt(log.topics[1] || "0")); } catch { /* */ } }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3">
-        <div className="flex-1 bg-gray-900 rounded-2xl p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Weekly Pool</p>
-          <p className="text-xl font-bold text-yellow-400">
-            {prizePool ? (Number(prizePool) / 1e18).toFixed(2) : "0.00"} USDM
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-gray-900 rounded-2xl p-3 text-center">
+          <p className="text-[10px] text-gray-500 mb-1">Prize Pool</p>
+          <p className="text-base font-bold text-yellow-400">
+            {prizePool ? (Number(prizePool) / 1e18).toFixed(1) : "0"} USDM
           </p>
         </div>
-        <div className="flex-1 bg-gray-900 rounded-2xl p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Your Wins</p>
-          <p className="text-xl font-bold text-red-400">{wins?.toString() ?? "0"}</p>
+        <div className="bg-gray-900 rounded-2xl p-3 text-center">
+          <p className="text-[10px] text-gray-500 mb-1">Your Wins</p>
+          <p className="text-base font-bold text-red-400">{wins?.toString() ?? "0"}</p>
+        </div>
+        <div className="bg-gray-900 rounded-2xl p-3 text-center">
+          <p className="text-[10px] text-gray-500 mb-1">All Games</p>
+          <p className="text-base font-bold text-gray-300">{totalGamesCount?.toString() ?? "0"}</p>
         </div>
       </div>
 
@@ -106,14 +92,12 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
         <p className="font-semibold text-white">New Game vs AI</p>
 
         <div>
-          <p className="text-xs text-gray-400 mb-2">Number of AI opponents</p>
+          <p className="text-xs text-gray-400 mb-2">AI opponents</p>
           <div className="flex gap-2">
             {[1, 2, 3].map((n) => (
               <button key={n} onClick={() => setAiCount(n)}
                 className={`flex-1 py-2.5 text-sm font-bold rounded-xl border transition-colors ${
-                  aiCount === n
-                    ? "border-red-500 bg-red-900/40 text-red-400"
-                    : "border-gray-700 text-gray-400"
+                  aiCount === n ? "border-red-500 bg-red-900/40 text-red-400" : "border-gray-700 text-gray-400"
                 }`}>
                 {n} AI
               </button>
@@ -122,30 +106,23 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
         </div>
 
         <div>
-          <p className="text-xs text-gray-400 mb-1">Optional wager (USDM)</p>
+          <p className="text-xs text-gray-400 mb-1">Wager (USDM) — optional</p>
           <input
             value={wager}
             onChange={e => { setWager(e.target.value); validateWager(e.target.value); }}
             placeholder="0 = free to play"
-            type="number"
-            min="0"
-            step="0.01"
-            inputMode="decimal"
-            className={`w-full bg-gray-800 border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 ${
-              wagerError ? "border-red-500" : "border-gray-700"
-            }`}
+            type="number" min="0" step="0.01" inputMode="decimal"
+            className={`w-full bg-gray-800 border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 ${wagerError ? "border-red-500" : "border-gray-700"}`}
           />
           {wagerError
             ? <p className="text-xs text-red-400 mt-1">{wagerError}</p>
-            : <p className="text-xs text-gray-600 mt-1">Win back 99% of wager if you beat all AI</p>
+            : <p className="text-xs text-gray-600 mt-1">Win 99% back if you beat all AI</p>
           }
         </div>
 
         {status && <p className="text-xs text-yellow-400 animate-pulse">{status}</p>}
 
-        <button
-          onClick={handleCreate}
-          disabled={busy || !!wagerError}
+        <button onClick={handleCreate} disabled={busy || !!wagerError}
           className="w-full py-3.5 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-xl font-bold transition-colors">
           {busy ? (status ?? "Working...") : "🎲 Start Game"}
         </button>
