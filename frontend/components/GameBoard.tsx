@@ -58,9 +58,11 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
         const [col, row] = PIECE_BASE[s]?.[i] ?? [7, 7];
         if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
       } else if (pos >= 1 && pos <= 52) {
+        // pos is 1-indexed (1=first square); BOARD_PATH is 0-indexed
         const [col, row] = boardSquareCoords(pos - 1);
         if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
       } else if (pos >= 53 && pos <= 58) {
+        // step = pos - 52; homeStretchCoords expects 1-indexed step
         const [col, row] = homeStretchCoords(s, pos - 52);
         if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
       }
@@ -126,11 +128,10 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
               else if (inY) bg = "bg-yellow-950";
 
               const isSafe = (() => {
-                for (let s = 1; s <= 52; s++) {
-                  if (SAFE.has(s)) {
-                    const [sc, sr] = boardSquareCoords(s - 1);
-                    if (sc === col && sr === row) return true;
-                  }
+                for (const sq of SAFE) {
+                  if (sq === 0) continue;
+                  const [sc, sr] = boardSquareCoords(sq - 1);
+                  if (sc === col && sr === row) return true;
                 }
                 return false;
               })();
