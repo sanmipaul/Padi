@@ -9,7 +9,7 @@ import Leaderboard from "@/components/Leaderboard";
 type View = "lobby" | "game" | "leaderboard";
 
 export default function Home() {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const [view, setView] = useState<View>("lobby");
   const [activeGameId, setActiveGameId] = useState<bigint | null>(null);
 
@@ -28,12 +28,20 @@ export default function Home() {
       <header className="pt-5 pb-3 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-red-400">🎲 Padi</h1>
-          <p className="text-xs text-gray-500">Ludo vs AI</p>
+          <p className="text-xs text-gray-500">Ludo vs AI · Celo</p>
         </div>
-        <button onClick={() => setView(v => v === "leaderboard" ? "lobby" : "leaderboard")}
-          className="text-xs text-gray-400 border border-gray-700 px-3 py-1.5 rounded-lg">
-          {view === "leaderboard" ? "← Back" : "Leaderboard"}
-        </button>
+        <div className="flex items-center gap-2">
+          {address && (
+            <span className="text-[10px] text-gray-600 font-mono">
+              {address.slice(0, 6)}…{address.slice(-4)}
+            </span>
+          )}
+          <button
+            onClick={() => setView(v => v === "leaderboard" ? "lobby" : "leaderboard")}
+            className="text-xs text-gray-400 border border-gray-700 px-3 py-1.5 rounded-lg">
+            {view === "leaderboard" ? "← Back" : "Leaderboard"}
+          </button>
+        </div>
       </header>
 
       <nav className="flex bg-gray-900 rounded-xl p-1 mb-4 gap-1">
