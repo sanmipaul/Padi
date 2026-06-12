@@ -15,6 +15,87 @@ const PIECE_BASE: Record<number, [number, number][]> = {
 
 const SEAT_LABELS = ["You", "AI 1", "AI 2", "AI 3"];
 
+type Cell = { seat: number; pieceIdx: number };
+
+function buildGrid(
+  pieces: readonly (readonly number[])[],
+  totalSeats: number
+): (Cell | null)[][] {
+  const grid: (Cell | null)[][] = Array.from({ length: 15 }, () => Array(15).fill(null));
+  for (let s = 0; s < totalSeats; s++) {
+    for (let i = 0; i < 4; i++) {
+      const pos = Number(pieces[s]?.[i] ?? 0);
+      if (pos === 0) {
+        const [col, row] = PIECE_BASE[s]?.[i] ?? [7, 7];
+        if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
+      } else if (pos >= 1 && pos <= 52) {
+        const [col, row] = boardSquareCoords(pos - 1);
+        if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
+      } else if (pos >= 53 && pos <= 58) {
+        const [col, row] = homeStretchCoords(s, pos - 52);
+        if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
+      }
+    }
+  }
+  return grid;
+}
+
+function BoardGrid({
+  grid,
+  canMove,
+  onMove,
+}: {
+  grid: (Cell | null)[][];
+  canMove: boolean;
+  onMove: (pieceIdx: number) => void;
+}) {
+  return (
+    <div className="w-full aspect-square bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gridTemplateRows: "repeat(15, 1fr)", width: "100%", height: "100%", gap: "1px" }}>
+        {Array.from({ length: 15 }, (_, row) =>
+          Array.from({ length: 15 }, (_, col) => {
+            const cell = grid[row][col];
+            const inR = row <= 4 && col <= 4;
+            const inG = row <= 4 && col >= 10;
+            const inB = row >= 10 && col <= 4;
+            const inY = row >= 10 && col >= 10;
+            const isCenter = row >= 6 && row <= 8 && col >= 6 && col <= 8;
+            let bg = "bg-gray-800";
+            if (isCenter) bg = "bg-gray-700";
+            else if (inR) bg = "bg-red-950";
+            else if (inG) bg = "bg-green-950";
+            else if (inB) bg = "bg-blue-950";
+            else if (inY) bg = "bg-yellow-950";
+
+            const isSafe = (() => {
+              for (const sq of SAFE) {
+                if (sq === 0) continue;
+                const [sc, sr] = boardSquareCoords(sq - 1);
+                if (sc === col && sr === row) return true;
+              }
+              return false;
+            })();
+
+            return (
+              <div key={`${row}-${col}`}
+                className={`${bg} flex items-center justify-center ${isSafe ? "ring-1 ring-inset ring-yellow-600/30" : ""}`}>
+                {cell && (
+                  <button
+                    onClick={() => canMove && cell.seat === 0 && onMove(cell.pieceIdx)}
+                    className="w-full h-full flex items-center justify-center"
+                    style={{ backgroundColor: PLAYER_COLORS[cell.seat] + "cc" }}>
+                    <span className="text-[6px] font-bold text-white">{cell.pieceIdx + 1}</span>
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; onBack: () => void }) {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
@@ -47,27 +128,7 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
   const canRoll = isMyTurn && !diceRolled;
   const canMove = isMyTurn && diceRolled;
   const totalSeats = 1 + aiCount;
-
-  type Cell = { seat: number; pieceIdx: number };
-  const grid: (Cell | null)[][] = Array.from({ length: 15 }, () => Array(15).fill(null));
-
-  for (let s = 0; s < totalSeats; s++) {
-    for (let i = 0; i < 4; i++) {
-      const pos = Number(pieces[s]?.[i] ?? 0);
-      if (pos === 0) {
-        const [col, row] = PIECE_BASE[s]?.[i] ?? [7, 7];
-        if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
-      } else if (pos >= 1 && pos <= 52) {
-        // pos is 1-indexed (1=first square); BOARD_PATH is 0-indexed
-        const [col, row] = boardSquareCoords(pos - 1);
-        if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
-      } else if (pos >= 53 && pos <= 58) {
-        // step = pos - 52; homeStretchCoords expects 1-indexed step
-        const [col, row] = homeStretchCoords(s, pos - 52);
-        if (grid[row][col] === null) grid[row][col] = { seat: s, pieceIdx: i };
-      }
-    }
-  }
+  const grid = buildGrid(pieces, totalSeats);
 
   function doRoll() {
     roll({ address: contract, abi: PADI_ABI, functionName: "rollDice", args: [gameId!] });
@@ -110,49 +171,7 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
         ))}
       </div>
 
-      <div className="w-full aspect-square bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gridTemplateRows: "repeat(15, 1fr)", width: "100%", height: "100%", gap: "1px" }}>
-          {Array.from({ length: 15 }, (_, row) =>
-            Array.from({ length: 15 }, (_, col) => {
-              const cell = grid[row][col];
-              const isCenter = row >= 6 && row <= 8 && col >= 6 && col <= 8;
-              const inR = row <= 4 && col <= 4;
-              const inG = row <= 4 && col >= 10;
-              const inB = row >= 10 && col <= 4;
-              const inY = row >= 10 && col >= 10;
-              let bg = "bg-gray-800";
-              if (isCenter) bg = "bg-gray-700";
-              else if (inR) bg = "bg-red-950";
-              else if (inG) bg = "bg-green-950";
-              else if (inB) bg = "bg-blue-950";
-              else if (inY) bg = "bg-yellow-950";
-
-              const isSafe = (() => {
-                for (const sq of SAFE) {
-                  if (sq === 0) continue;
-                  const [sc, sr] = boardSquareCoords(sq - 1);
-                  if (sc === col && sr === row) return true;
-                }
-                return false;
-              })();
-
-              return (
-                <div key={`${row}-${col}`}
-                  className={`${bg} flex items-center justify-center ${isSafe ? "ring-1 ring-inset ring-yellow-600/30" : ""}`}>
-                  {cell && (
-                    <button
-                      onClick={() => canMove && cell.seat === 0 && doMove(cell.pieceIdx)}
-                      className="w-full h-full flex items-center justify-center"
-                      style={{ backgroundColor: PLAYER_COLORS[cell.seat] + "cc" }}>
-                      <span className="text-[6px] font-bold text-white">{cell.pieceIdx + 1}</span>
-                    </button>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
+      <BoardGrid grid={grid} canMove={canMove} onMove={doMove} />
 
       <div className="flex gap-3">
         <div className="flex-1 bg-gray-900 rounded-xl p-3 text-center">
