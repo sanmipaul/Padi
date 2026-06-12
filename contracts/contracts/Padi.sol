@@ -36,6 +36,12 @@ contract Padi is Ownable, ReentrancyGuard {
     uint256 public weeklyPrizePool;
     uint256 public platformFeeBalance;
 
+    event GameCreated(uint256 indexed gameId, address indexed player, uint8 aiCount);
+    event DiceRolled(uint256 indexed gameId, uint8 seat, uint8 dice);
+    event PieceMoved(uint256 indexed gameId, uint8 seat, uint8 piece, uint8 from, uint8 to);
+    event PieceCaptured(uint256 indexed gameId, uint8 capturerSeat, uint8 capturedSeat, uint8 piece);
+    event GameFinished(uint256 indexed gameId, address indexed winner, uint256 prize);
+
     constructor(address _usdm) Ownable(msg.sender) {
         usdm = IERC20(_usdm);
     }
