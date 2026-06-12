@@ -126,6 +126,10 @@ contract Padi is Ownable, ReentrancyGuard {
         return playerGames[p];
     }
 
+    function totalGames() external view returns (uint256) {
+        return _gameCounter;
+    }
+
     // ─── Admin ────────────────────────────────────────────────────────────────
 
     function withdrawPlatformFee(address to) external onlyOwner {
@@ -149,6 +153,15 @@ contract Padi is Ownable, ReentrancyGuard {
             usdm.transfer(recipients[i], amounts[i]);
             emit PrizeDistributed(recipients[i], amounts[i]);
         }
+    }
+
+    /// @notice Refund a stuck active game's wager back to the player.
+    function emergencyRefund(uint256 gameId) external onlyOwner {
+        Game storage g = games[gameId];
+        require(g.state == GameState.ACTIVE, "not active");
+        require(g.wager > 0, "no wager");
+        g.state = GameState.FINISHED;
+        usdm.transfer(g.player, g.wager);
     }
 
     // ─── Internal helpers ─────────────────────────────────────────────────────
