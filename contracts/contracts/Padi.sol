@@ -111,7 +111,6 @@ contract Padi is Ownable, ReentrancyGuard {
         return true;
     }
 
-    /// @dev Greedy AI: prefer capturing, then entering board, then advancing most-progressed piece.
     function _aiPickPiece(Game storage g, uint8 seat, uint8 dice) internal view returns (uint8) {
         uint8 best = type(uint8).max;
         uint8 bestScore = 0;
@@ -121,15 +120,14 @@ contract Padi is Ownable, ReentrancyGuard {
             if (pos == AT_BASE && dice != 6) continue;
             uint8 newPos = pos == AT_BASE ? 1 : pos + dice;
             if (pos > BOARD_SIZE && newPos > FINISHED_POS) continue;
-            uint8 score = pos == AT_BASE ? 50 : pos; // prefer advancing further pieces
-            // Check if this move captures a player piece
+            uint8 score = pos == AT_BASE ? 50 : pos;
             if (newPos >= 1 && newPos <= BOARD_SIZE) {
                 uint8 myGlobal = _globalPos(seat, newPos);
                 if (!_isSafe(myGlobal)) {
                     for (uint8 sp = 0; sp < PIECES; sp++) {
                         uint8 ppos = g.pieces[0][sp];
                         if (ppos >= 1 && ppos <= BOARD_SIZE && _globalPos(0, ppos) == myGlobal) {
-                            score = 200; // capture is highest priority
+                            score = 200;
                         }
                     }
                 }
@@ -137,6 +135,45 @@ contract Padi is Ownable, ReentrancyGuard {
             if (score > bestScore) { bestScore = score; best = p; }
         }
         return best;
+    }
+
+    /// @dev Execute AI turns for all AI seats in the same transaction as the human move.
+    function _runAITurns(uint256 gameId) internal {
+        Game storage g = games[gameId];
+        uint8 totalSeats = 1 + g.aiCount;
+        uint8 maxIter = 20;
+        uint8 iter = 0;
+        // Advance through seats 1..aiCount, giving each a turn
+        while (g.state == GameState.ACTIVE && iter < maxIter) {
+            iter++;
+            uint8 seat = g.currentSeat == 0 ? 1 : g.currentSeat;
+            if (seat >= totalSeats) { g.currentSeat = 0; break; }
+            g.currentSeat = seat;
+            uint8 dice = _rollDiceFor(gameId, seat);
+            if (!_hasValidMove(g, seat, dice)) {
+                // Skip turn
+                g.currentSeat = (seat + 1 >= totalSeats) ? 0 : seat + 1;
+                if (g.currentSeat == 0) break;
+                continue;
+            }
+            uint8 pick = _aiPickPiece(g, seat, dice);
+            if (pick == type(uint8).max) {
+                g.currentSeat = (seat + 1 >= totalSeats) ? 0 : seat + 1;
+                if (g.currentSeat == 0) break;
+                continue;
+            }
+            uint8 from = g.pieces[seat][pick];
+            uint8 newPos = from == AT_BASE ? 1 : from + dice;
+            _applyMove(gameId, seat, pick, newPos);
+            emit PieceMoved(gameId, seat, pick, from, newPos);
+            if (_isAllFinished(g, seat)) {
+                _endGame(gameId, address(0)); // AI won
+                return;
+            }
+            // Move to next seat, wrap to 0 (player) after last AI
+            g.currentSeat = (seat + 1 >= totalSeats) ? 0 : seat + 1;
+            if (g.currentSeat == 0) break;
+        }
     }
 
     function _rollDiceFor(uint256 gameId, uint8 seat) internal returns (uint8) {
@@ -200,5 +237,4 @@ contract Padi is Ownable, ReentrancyGuard {
     }
 
     function _endGame(uint256 gameId, address winner) internal {}
-    function _runAITurns(uint256 gameId) internal {}
 }
