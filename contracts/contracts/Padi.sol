@@ -6,29 +6,31 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title Padi — on-chain Ludo vs AI on Celo
-/// @notice Single-player game against 1-3 AI opponents. All game logic executes on-chain.
+/// @notice Single-player game: you vs 1-3 AI opponents. AI runs in the same tx as your move.
+/// @dev Uses block.prevrandao for dice. Safe squares prevent captures.
 contract Padi is Ownable, ReentrancyGuard {
     IERC20 public immutable usdm;
 
-    uint8 public constant BOARD_SIZE = 52;
+    uint8 public constant BOARD_SIZE   = 52;
     uint8 public constant HOME_STRETCH = 6;
     uint8 public constant FINISHED_POS = 59;
-    uint8 public constant AT_BASE = 0;
-    uint8 public constant PIECES = 4;
+    uint8 public constant AT_BASE      = 0;
+    uint8 public constant PIECES       = 4;
 
+    /// @notice 0 = ACTIVE, 1 = FINISHED
     enum GameState { ACTIVE, FINISHED }
 
     struct Game {
         address player;
-        uint8[4][4] pieces;
-        uint8 aiCount;
-        uint8 currentSeat;
+        uint8[4][4] pieces;    // [seat][pieceIdx] = position (0=base, 1-52=board, 53-58=home stretch, 59=home)
+        uint8 aiCount;         // 1-3 AI opponents
+        uint8 currentSeat;     // 0 = player, 1..aiCount = AI
         uint8 lastDice;
-        bool diceRolled;
+        bool  diceRolled;
         GameState state;
-        uint256 wager;
-        address winner;
-        uint256 nonce;
+        uint256 wager;         // USDM amount staked (0 = free game)
+        address winner;        // address(0) if AI won
+        uint256 nonce;         // incremented each roll for entropy
     }
 
     uint256 private _gameCounter;
@@ -51,6 +53,11 @@ contract Padi is Ownable, ReentrancyGuard {
         usdm = IERC20(_usdm);
     }
 
+    // ─── Public ───────────────────────────────────────────────────────────────
+
+    /// @notice Create a new single-player Ludo game vs AI.
+    /// @param aiCount Number of AI opponents (1-3).
+    /// @param wagerAmount USDM to wager; must be pre-approved. Use 0 for a free game.
     function createGame(uint8 aiCount, uint256 wagerAmount) external nonReentrant returns (uint256 gameId) {
         require(aiCount >= 1 && aiCount <= 3, "aiCount 1-3");
         if (wagerAmount > 0) {
@@ -71,12 +78,13 @@ contract Padi is Ownable, ReentrancyGuard {
         emit GameCreated(gameId, msg.sender, aiCount);
     }
 
+    /// @notice Roll the dice for your turn. Must be called before movePiece.
     function rollDice(uint256 gameId) external {
         Game storage g = games[gameId];
         require(g.state == GameState.ACTIVE, "not active");
-        require(g.player == msg.sender, "not player");
-        require(g.currentSeat == 0, "not your turn");
-        require(!g.diceRolled, "already rolled");
+        require(g.player == msg.sender,      "not player");
+        require(g.currentSeat == 0,          "not your turn");
+        require(!g.diceRolled,               "already rolled");
         g.nonce++;
         uint8 dice = uint8(uint256(keccak256(abi.encodePacked(block.prevrandao, gameId, g.nonce))) % 6) + 1;
         g.lastDice = dice;
@@ -84,16 +92,17 @@ contract Padi is Ownable, ReentrancyGuard {
         emit DiceRolled(gameId, 0, dice);
     }
 
+    /// @notice Move one of your pieces. AI turns run automatically after this call.
     function movePiece(uint256 gameId, uint8 pieceIdx) external nonReentrant {
         Game storage g = games[gameId];
         require(g.state == GameState.ACTIVE, "not active");
-        require(g.player == msg.sender, "not player");
-        require(g.currentSeat == 0, "not your turn");
-        require(g.diceRolled, "roll first");
-        require(pieceIdx < PIECES, "bad piece");
-        uint8 pos = g.pieces[0][pieceIdx];
-        require(pos != FINISHED_POS, "already home");
-        require(pos != AT_BASE || g.lastDice == 6, "need 6 to leave base");
+        require(g.player == msg.sender,      "not player");
+        require(g.currentSeat == 0,          "not your turn");
+        require(g.diceRolled,                "roll first");
+        require(pieceIdx < PIECES,           "bad piece");
+        uint8 pos    = g.pieces[0][pieceIdx];
+        require(pos != FINISHED_POS,                    "already home");
+        require(pos != AT_BASE || g.lastDice == 6,      "need 6 to leave base");
         uint8 newPos = pos == AT_BASE ? 1 : pos + g.lastDice;
         require(!(pos > BOARD_SIZE && newPos > FINISHED_POS), "overshoot");
         uint8 from = pos;
@@ -107,13 +116,15 @@ contract Padi is Ownable, ReentrancyGuard {
         _runAITurns(gameId);
     }
 
+    // ─── Views ────────────────────────────────────────────────────────────────
+
     function getGame(uint256 gameId) external view returns (
         address player,
         uint8[4][4] memory pieces,
         uint8 aiCount,
         uint8 currentSeat,
         uint8 lastDice,
-        bool diceRolled,
+        bool  diceRolled,
         uint8 state,
         uint256 wager,
         address winner
@@ -155,7 +166,6 @@ contract Padi is Ownable, ReentrancyGuard {
         }
     }
 
-    /// @notice Refund a stuck active game's wager back to the player.
     function emergencyRefund(uint256 gameId) external onlyOwner {
         Game storage g = games[gameId];
         require(g.state == GameState.ACTIVE, "not active");
@@ -164,7 +174,7 @@ contract Padi is Ownable, ReentrancyGuard {
         usdm.transfer(g.player, g.wager);
     }
 
-    // ─── Internal helpers ─────────────────────────────────────────────────────
+    // ─── Internal ─────────────────────────────────────────────────────────────
 
     function _isAllFinished(Game storage g, uint8 seat) internal view returns (bool) {
         for (uint8 p = 0; p < PIECES; p++) {
@@ -183,6 +193,7 @@ contract Padi is Ownable, ReentrancyGuard {
             uint8 newPos = pos == AT_BASE ? 1 : pos + dice;
             if (pos > BOARD_SIZE && newPos > FINISHED_POS) continue;
             uint8 score = pos == AT_BASE ? 50 : pos;
+            // Prioritise capturing player pieces
             if (newPos >= 1 && newPos <= BOARD_SIZE) {
                 uint8 myGlobal = _globalPos(seat, newPos);
                 if (!_isSafe(myGlobal)) {
@@ -221,7 +232,7 @@ contract Padi is Ownable, ReentrancyGuard {
                 if (g.currentSeat == 0) break;
                 continue;
             }
-            uint8 from = g.pieces[seat][pick];
+            uint8 from   = g.pieces[seat][pick];
             uint8 newPos = from == AT_BASE ? 1 : from + dice;
             _applyMove(gameId, seat, pick, newPos);
             emit PieceMoved(gameId, seat, pick, from, newPos);
@@ -236,22 +247,21 @@ contract Padi is Ownable, ReentrancyGuard {
 
     function _endGame(uint256 gameId, address winner) internal {
         Game storage g = games[gameId];
-        g.state = GameState.FINISHED;
+        g.state  = GameState.FINISHED;
         g.winner = winner;
         uint256 prize = 0;
         if (g.wager > 0) {
             if (winner == g.player) {
-                prize = (g.wager * 99) / 100;
-                platformFeeBalance += (g.wager * 5) / 1000;
-                weeklyPrizePool += g.wager - prize - (g.wager * 5) / 1000;
+                // 99% back to player, 0.5% platform, remainder to prize pool
+                prize              = (g.wager * 99)  / 100;
+                platformFeeBalance += (g.wager * 5)   / 1000;
+                weeklyPrizePool   += g.wager - prize - (g.wager * 5) / 1000;
                 usdm.transfer(winner, prize);
             } else {
                 weeklyPrizePool += g.wager;
             }
         }
-        if (winner == g.player) {
-            totalWins[g.player]++;
-        }
+        if (winner == g.player) totalWins[g.player]++;
         emit GameFinished(gameId, winner, prize);
     }
 
@@ -293,9 +303,7 @@ contract Padi is Ownable, ReentrancyGuard {
         g.pieces[seat][pieceIdx] = newPos;
         if (newPos >= 1 && newPos <= BOARD_SIZE) {
             uint8 myGlobal = _globalPos(seat, newPos);
-            if (!_isSafe(myGlobal)) {
-                _capture(gameId, seat, myGlobal);
-            }
+            if (!_isSafe(myGlobal)) _capture(gameId, seat, myGlobal);
         }
     }
 
