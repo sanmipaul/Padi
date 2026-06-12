@@ -15,6 +15,21 @@ contract Padi is Ownable, ReentrancyGuard {
     uint8 public constant AT_BASE = 0;
     uint8 public constant PIECES = 4;
 
+    enum GameState { ACTIVE, FINISHED }
+
+    struct Game {
+        address player;
+        uint8[4][4] pieces;
+        uint8 aiCount;
+        uint8 currentSeat;
+        uint8 lastDice;
+        bool diceRolled;
+        GameState state;
+        uint256 wager;
+        address winner;
+        uint256 nonce;
+    }
+
     constructor(address _usdm) Ownable(msg.sender) {
         usdm = IERC20(_usdm);
     }
