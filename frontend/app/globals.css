@@ -1,4 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-body { @apply bg-gray-950 text-white; }
+
+body {
+  @apply bg-gray-950 text-white;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide scrollbar on mobile game board */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Tap highlight removal for game buttons */
+button { -webkit-tap-highlight-color: transparent; }
