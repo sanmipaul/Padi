@@ -9,9 +9,18 @@ import Leaderboard from "@/components/Leaderboard";
 type View = "lobby" | "game" | "leaderboard";
 
 export default function Home() {
-  const { isConnected, address } = useAccount();
+  const { isConnected, isConnecting, address } = useAccount();
   const [view, setView] = useState<View>("lobby");
   const [activeGameId, setActiveGameId] = useState<bigint | null>(null);
+
+  if (isConnecting) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+        <div className="text-5xl animate-spin">🎲</div>
+        <p className="text-gray-400 text-sm">Connecting wallet...</p>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (
