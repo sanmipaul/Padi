@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useAccount,
   useReadContract,
@@ -20,17 +20,12 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
   const [wager, setWager] = useState("");
   const [wagerError, setWagerError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [pendingWager, setPendingWager] = useState(0n);
 
   const { data: prizePool } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "weeklyPrizePool" });
   const { data: totalGamesCount } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "totalGames" });
-  const { data: myGames } = useReadContract({
-    address: contract, abi: PADI_ABI, functionName: "getPlayerGames",
-    args: address ? [address] : undefined,
-  });
-  const { data: wins } = useReadContract({
-    address: contract, abi: PADI_ABI, functionName: "totalWins",
-    args: address ? [address] : undefined,
-  });
+  const { data: myGames } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "getPlayerGames", args: address ? [address] : undefined });
+  const { data: wins } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "totalWins", args: address ? [address] : undefined });
 
   const { writeContract: approve, data: approveTx } = useWriteContract();
   const { writeContract: create, data: createTx } = useWriteContract();
@@ -44,13 +39,14 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
   function validateWager(val: string) {
     const n = parseFloat(val);
     if (val && (isNaN(n) || n < 0)) setWagerError("Enter a valid amount");
-    else if (n > 0 && n < MIN_WAGER) setWagerError(`Minimum wager is ${MIN_WAGER} USDM`);
+    else if (n > 0 && n < MIN_WAGER) setWagerError(`Minimum ${MIN_WAGER} USDM`);
     else setWagerError(null);
   }
 
   function handleCreate() {
     if (wagerError) return;
     if (wagerBN > 0n) {
+      setPendingWager(wagerBN);
       setStatus("Approving USDM...");
       approve({ address: USDM_ADDRESS as `0x${string}`, abi: ERC20_ABI, functionName: "approve", args: [contract, wagerBN] });
     } else {
@@ -59,24 +55,28 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
     }
   }
 
-  if (approveOk && !createTx) {
-    setStatus("Creating game...");
-    create({ address: contract, abi: PADI_ABI, functionName: "createGame", args: [aiCount, wagerBN] });
-  }
+  // After approval succeeds, create the game with the pending wager
+  useEffect(() => {
+    if (approveOk && pendingWager > 0n && !createTx) {
+      setStatus("Creating game...");
+      create({ address: contract, abi: PADI_ABI, functionName: "createGame", args: [aiCount, pendingWager] });
+    }
+  }, [approveOk]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (createOk && createReceipt) {
-    const log = createReceipt.logs[0];
-    if (log) { try { onEnterGame(BigInt(log.topics[1] || "0")); } catch { /* */ } }
-  }
+  // Navigate into game once created
+  useEffect(() => {
+    if (createOk && createReceipt) {
+      const log = createReceipt.logs[0];
+      if (log) { try { onEnterGame(BigInt(log.topics[1] || "0")); } catch { /* */ } }
+    }
+  }, [createOk, createReceipt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-gray-900 rounded-2xl p-3 text-center">
           <p className="text-[10px] text-gray-500 mb-1">Prize Pool</p>
-          <p className="text-base font-bold text-yellow-400">
-            {prizePool ? (Number(prizePool) / 1e18).toFixed(1) : "0"} USDM
-          </p>
+          <p className="text-base font-bold text-yellow-400">{prizePool ? (Number(prizePool) / 1e18).toFixed(1) : "0"} USDM</p>
         </div>
         <div className="bg-gray-900 rounded-2xl p-3 text-center">
           <p className="text-[10px] text-gray-500 mb-1">Your Wins</p>
@@ -96,9 +96,7 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
           <div className="flex gap-2">
             {[1, 2, 3].map((n) => (
               <button key={n} onClick={() => setAiCount(n)}
-                className={`flex-1 py-2.5 text-sm font-bold rounded-xl border transition-colors ${
-                  aiCount === n ? "border-red-500 bg-red-900/40 text-red-400" : "border-gray-700 text-gray-400"
-                }`}>
+                className={`flex-1 py-2.5 text-sm font-bold rounded-xl border transition-colors ${aiCount === n ? "border-red-500 bg-red-900/40 text-red-400" : "border-gray-700 text-gray-400"}`}>
                 {n} AI
               </button>
             ))}
