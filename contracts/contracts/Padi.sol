@@ -104,6 +104,25 @@ contract Padi is Ownable, ReentrancyGuard {
         _runAITurns(gameId);
     }
 
+    function getGame(uint256 gameId) external view returns (
+        address player,
+        uint8[4][4] memory pieces,
+        uint8 aiCount,
+        uint8 currentSeat,
+        uint8 lastDice,
+        bool diceRolled,
+        uint8 state,
+        uint256 wager,
+        address winner
+    ) {
+        Game storage g = games[gameId];
+        return (g.player, g.pieces, g.aiCount, g.currentSeat, g.lastDice, g.diceRolled, uint8(g.state), g.wager, g.winner);
+    }
+
+    function getPlayerGames(address p) external view returns (uint256[] memory) {
+        return playerGames[p];
+    }
+
     function _isAllFinished(Game storage g, uint8 seat) internal view returns (bool) {
         for (uint8 p = 0; p < PIECES; p++) {
             if (g.pieces[seat][p] != FINISHED_POS) return false;
@@ -172,7 +191,6 @@ contract Padi is Ownable, ReentrancyGuard {
         }
     }
 
-    /// @dev Settle the game: pay out wager to winner (or forfeit to prize pool if AI wins).
     function _endGame(uint256 gameId, address winner) internal {
         Game storage g = games[gameId];
         g.state = GameState.FINISHED;
@@ -180,13 +198,11 @@ contract Padi is Ownable, ReentrancyGuard {
         uint256 prize = 0;
         if (g.wager > 0) {
             if (winner == g.player) {
-                // Player wins: return 99%, 0.5% to platform, 0.5% to weekly pool
                 prize = (g.wager * 99) / 100;
                 platformFeeBalance += (g.wager * 5) / 1000;
                 weeklyPrizePool += g.wager - prize - (g.wager * 5) / 1000;
                 usdm.transfer(winner, prize);
             } else {
-                // AI wins: full wager to weekly prize pool
                 weeklyPrizePool += g.wager;
             }
         }
