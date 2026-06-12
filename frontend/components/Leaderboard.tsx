@@ -14,7 +14,11 @@ export default function Leaderboard() {
   const contract = PADI_ADDRESS;
 
   const { data: prize } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "weeklyPrizePool" });
-  const { data: myWins } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "totalWins", args: address ? [address] : undefined });
+  const { data: totalGamesCount } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "totalGames" });
+  const { data: myWins } = useReadContract({
+    address: contract, abi: PADI_ABI, functionName: "totalWins",
+    args: address ? [address] : undefined,
+  });
 
   const wins = TOP.map(addr =>
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -25,12 +29,22 @@ export default function Leaderboard() {
 
   return (
     <div className="space-y-4">
+      {/* Prize pool banner */}
       <div className="bg-yellow-900/20 border border-yellow-700 rounded-2xl p-4 text-center">
         <p className="text-xs text-yellow-500 uppercase tracking-wide mb-1">Weekly Prize Pool</p>
-        <p className="text-3xl font-bold text-yellow-400">{prize ? (Number(prize) / 1e18).toFixed(2) : "0.00"} USDM</p>
+        <p className="text-3xl font-bold text-yellow-400">
+          {prize ? (Number(prize) / 1e18).toFixed(2) : "0.00"} USDM
+        </p>
         <p className="text-xs text-gray-400 mt-1">Top players at week's end share this</p>
       </div>
 
+      {/* Global stats */}
+      <div className="bg-gray-900 rounded-2xl p-4 text-center">
+        <p className="text-xs text-gray-500 mb-1">Total Games Played</p>
+        <p className="text-2xl font-bold text-gray-300">{totalGamesCount?.toString() ?? "0"}</p>
+      </div>
+
+      {/* My stats */}
       {address && (
         <div className="bg-gray-900 rounded-2xl p-4 text-center">
           <p className="text-xs text-gray-500">Your wins vs AI</p>
@@ -38,6 +52,7 @@ export default function Leaderboard() {
         </div>
       )}
 
+      {/* Top players */}
       <div className="bg-gray-900 rounded-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-800">
           <p className="text-sm font-semibold text-white">All-Time Leaderboard</p>
