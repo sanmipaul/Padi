@@ -9,6 +9,12 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract Padi is Ownable, ReentrancyGuard {
     IERC20 public immutable usdm;
 
+    uint8 public constant BOARD_SIZE = 52;
+    uint8 public constant HOME_STRETCH = 6;
+    uint8 public constant FINISHED_POS = 59;
+    uint8 public constant AT_BASE = 0;
+    uint8 public constant PIECES = 4;
+
     constructor(address _usdm) Ownable(msg.sender) {
         usdm = IERC20(_usdm);
     }
