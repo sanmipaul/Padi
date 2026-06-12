@@ -45,4 +45,9 @@ contract Padi is Ownable, ReentrancyGuard {
     constructor(address _usdm) Ownable(msg.sender) {
         usdm = IERC20(_usdm);
     }
+
+    /// @notice Start a new solo game vs 1-3 AI opponents.
+    function createGame(uint8 aiCount, uint256 wagerAmount) external nonReentrant returns (uint256 gameId) {
+        require(aiCount >= 1 && aiCount <= 3, "aiCount 1-3");
+    }
 }
