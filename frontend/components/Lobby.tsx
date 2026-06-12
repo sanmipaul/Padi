@@ -10,12 +10,15 @@ import {
 import { parseUnits } from "viem";
 import { PADI_ADDRESS, PADI_ABI, ERC20_ABI, USDM_ADDRESS } from "@/lib/contracts";
 
+const MIN_WAGER = 0.01; // USDM
+
 export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) => void }) {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
 
   const [aiCount, setAiCount] = useState(1);
-  const [wager, setWager] = useState("0");
+  const [wager, setWager] = useState("");
+  const [wagerError, setWagerError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
   const { data: prizePool } = useReadContract({
@@ -35,10 +38,23 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
   const { isSuccess: approveOk, isLoading: approving } = useWaitForTransactionReceipt({ hash: approveTx });
   const { isSuccess: createOk, isLoading: creating, data: createReceipt } = useWaitForTransactionReceipt({ hash: createTx });
 
-  const wagerBN = wager && Number(wager) > 0 ? parseUnits(wager, 18) : 0n;
+  const wagerNum = parseFloat(wager) || 0;
+  const wagerBN = wagerNum > 0 ? parseUnits(wagerNum.toFixed(18), 18) : 0n;
   const busy = approving || creating;
 
+  function validateWager(val: string) {
+    const n = parseFloat(val);
+    if (val && (isNaN(n) || n < 0)) {
+      setWagerError("Enter a valid amount");
+    } else if (n > 0 && n < MIN_WAGER) {
+      setWagerError(`Minimum wager is ${MIN_WAGER} USDM`);
+    } else {
+      setWagerError(null);
+    }
+  }
+
   function handleCreate() {
+    if (wagerError) return;
     if (wagerBN > 0n) {
       setStatus("Approving USDM...");
       approve({
@@ -73,7 +89,6 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
 
   return (
     <div className="space-y-4">
-      {/* Stats row */}
       <div className="flex gap-3">
         <div className="flex-1 bg-gray-900 rounded-2xl p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Weekly Pool</p>
@@ -87,7 +102,6 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
         </div>
       </div>
 
-      {/* Game creation */}
       <div className="bg-gray-900 rounded-2xl p-4 space-y-4">
         <p className="font-semibold text-white">New Game vs AI</p>
 
@@ -111,29 +125,32 @@ export default function Lobby({ onEnterGame }: { onEnterGame: (gameId: bigint) =
           <p className="text-xs text-gray-400 mb-1">Optional wager (USDM)</p>
           <input
             value={wager}
-            onChange={e => setWager(e.target.value)}
+            onChange={e => { setWager(e.target.value); validateWager(e.target.value); }}
             placeholder="0 = free to play"
             type="number"
             min="0"
-            step="0.1"
-            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            step="0.01"
+            inputMode="decimal"
+            className={`w-full bg-gray-800 border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 ${
+              wagerError ? "border-red-500" : "border-gray-700"
+            }`}
           />
-          <p className="text-xs text-gray-600 mt-1">
-            Win back 99% of your wager if you beat all AI. 0.5% goes to the prize pool.
-          </p>
+          {wagerError
+            ? <p className="text-xs text-red-400 mt-1">{wagerError}</p>
+            : <p className="text-xs text-gray-600 mt-1">Win back 99% of wager if you beat all AI</p>
+          }
         </div>
 
-        {status && <p className="text-xs text-yellow-400">{status}</p>}
+        {status && <p className="text-xs text-yellow-400 animate-pulse">{status}</p>}
 
         <button
           onClick={handleCreate}
-          disabled={busy}
+          disabled={busy || !!wagerError}
           className="w-full py-3.5 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-xl font-bold transition-colors">
           {busy ? (status ?? "Working...") : "🎲 Start Game"}
         </button>
       </div>
 
-      {/* Continue a game */}
       {myGames && myGames.length > 0 && (
         <div className="bg-gray-900 rounded-2xl p-4">
           <p className="text-xs text-gray-400 mb-3">Continue a Game</p>
