@@ -37,17 +37,31 @@ function buildGrid(pieces: readonly (readonly number[])[], totalSeats: number): 
   return grid;
 }
 
-function BoardGrid({ grid, canMove, onMove }: { grid: (Cell | null)[][]; canMove: boolean; onMove: (idx: number) => void }) {
+function canMovePiece(pos: number, dice: number): boolean {
+  if (pos === 59) return false;
+  if (pos === 0 && dice !== 6) return false;
+  const newPos = pos === 0 ? 1 : pos + dice;
+  if (pos > 52 && newPos > 59) return false;
+  return true;
+}
+
+function BoardGrid({
+  grid, canMove, dice, onMove, playerPieces
+}: {
+  grid: (Cell | null)[][];
+  canMove: boolean;
+  dice: number;
+  onMove: (idx: number) => void;
+  playerPieces: readonly number[];
+}) {
   return (
     <div className="w-full aspect-square bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gridTemplateRows: "repeat(15, 1fr)", width: "100%", height: "100%", gap: "1px" }}>
         {Array.from({ length: 15 }, (_, row) =>
           Array.from({ length: 15 }, (_, col) => {
             const cell = grid[row][col];
-            const inR = row <= 4 && col <= 4;
-            const inG = row <= 4 && col >= 10;
-            const inB = row >= 10 && col <= 4;
-            const inY = row >= 10 && col >= 10;
+            const inR = row <= 4 && col <= 4, inG = row <= 4 && col >= 10;
+            const inB = row >= 10 && col <= 4, inY = row >= 10 && col >= 10;
             const isCenter = row >= 6 && row <= 8 && col >= 6 && col <= 8;
             let bg = "bg-gray-800";
             if (isCenter) bg = "bg-gray-700";
@@ -63,12 +77,14 @@ function BoardGrid({ grid, canMove, onMove }: { grid: (Cell | null)[][]; canMove
               }
               return false;
             })();
+            const isMovable = canMove && cell?.seat === 0 && canMovePiece(Number(playerPieces[cell.pieceIdx] ?? 0), dice);
             return (
               <div key={`${row}-${col}`}
-                className={`${bg} flex items-center justify-center ${isSafe ? "ring-1 ring-inset ring-yellow-600/30" : ""}`}>
+                className={`${bg} flex items-center justify-center ${isSafe ? "ring-1 ring-inset ring-yellow-600/30" : ""} ${isMovable ? "ring-2 ring-white/40" : ""}`}>
                 {cell && (
-                  <button onClick={() => canMove && cell.seat === 0 && onMove(cell.pieceIdx)}
-                    className="w-full h-full flex items-center justify-center"
+                  <button
+                    onClick={() => isMovable && onMove(cell.pieceIdx)}
+                    className={`w-full h-full flex items-center justify-center ${isMovable ? "animate-pulse" : ""}`}
                     style={{ backgroundColor: PLAYER_COLORS[cell.seat] + "cc" }}>
                     <span className="text-[6px] font-bold text-white">{cell.pieceIdx + 1}</span>
                   </button>
@@ -116,6 +132,7 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
   const canMove = isMyTurn && diceRolled && !txPending;
   const totalSeats = 1 + aiCount;
   const grid = buildGrid(pieces, totalSeats);
+  const playerPieces = pieces[0] ?? [];
 
   function doRoll() {
     roll({ address: contract, abi: PADI_ABI, functionName: "rollDice", args: [gameId!] });
@@ -134,8 +151,8 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
       ? winner.toLowerCase() === address?.toLowerCase() ? "You won!" : "AI won"
       : "Game Over"
     : isMyTurn
-    ? canRoll ? "Your turn — roll the dice!" : `Rolled ${lastDice} — pick a piece`
-    : `AI ${currentSeat} is thinking...`;
+    ? canRoll ? "Your turn — roll!" : `Rolled ${lastDice} — pick a piece`
+    : `AI ${currentSeat} is moving...`;
 
   return (
     <div className="space-y-3">
@@ -145,9 +162,7 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
       </div>
 
       <div className="flex justify-between items-center">
-        <p className={`text-sm font-medium ${txPending ? "text-yellow-400 animate-pulse" : "text-white"}`}>
-          {statusMsg}
-        </p>
+        <p className={`text-sm font-medium ${txPending ? "text-yellow-400 animate-pulse" : "text-white"}`}>{statusMsg}</p>
         {wager > 0n && <p className="text-xs text-yellow-400">🏆 {(Number(wager) / 1e18).toFixed(2)} USDM</p>}
       </div>
 
@@ -155,14 +170,12 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
         {Array.from({ length: totalSeats }, (_, s) => (
           <div key={s} className="flex items-center gap-1.5 text-xs">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PLAYER_COLORS[s] }} />
-            <span className={s === currentSeat && state === 0 ? "text-white font-bold" : "text-gray-400"}>
-              {SEAT_LABELS[s]}
-            </span>
+            <span className={s === currentSeat && state === 0 ? "text-white font-bold" : "text-gray-400"}>{SEAT_LABELS[s]}</span>
           </div>
         ))}
       </div>
 
-      <BoardGrid grid={grid} canMove={canMove} onMove={doMove} />
+      <BoardGrid grid={grid} canMove={canMove} dice={lastDice} onMove={doMove} playerPieces={playerPieces} />
 
       <div className="flex gap-3">
         <div className="flex-1 bg-gray-900 rounded-xl p-3 text-center">
@@ -177,14 +190,14 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
 
       {canMove && (
         <div className="bg-gray-900 rounded-xl p-3">
-          <p className="text-xs text-gray-400 mb-2">Your pieces — tap to move</p>
+          <p className="text-xs text-gray-400 mb-2">Your pieces</p>
           <div className="grid grid-cols-4 gap-2">
             {Array.from({ length: 4 }, (_, i) => {
-              const pos = Number(pieces[0]?.[i] ?? 0);
-              const canMovePiece = pos !== 59 && (pos !== 0 || lastDice === 6);
+              const pos = Number(playerPieces[i] ?? 0);
+              const movable = canMovePiece(pos, lastDice);
               return (
-                <button key={i} onClick={() => canMovePiece && doMove(i)} disabled={!canMovePiece}
-                  className={`py-2.5 rounded-lg text-sm font-bold text-white transition-colors ${canMovePiece ? "bg-red-700 hover:bg-red-600" : "bg-gray-800 text-gray-600 cursor-not-allowed"}`}>
+                <button key={i} onClick={() => movable && doMove(i)} disabled={!movable}
+                  className={`py-2.5 rounded-lg text-sm font-bold text-white transition-colors ${movable ? "bg-red-700 hover:bg-red-600 ring-1 ring-red-400" : "bg-gray-800 text-gray-600 cursor-not-allowed"}`}>
                   {pos === 0 ? "⌂" : pos === 59 ? "✓" : pos}
                 </button>
               );
