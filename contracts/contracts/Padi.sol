@@ -97,7 +97,18 @@ contract Padi is Ownable, ReentrancyGuard {
         _applyMove(gameId, 0, pieceIdx, newPos);
         g.diceRolled = false;
         emit PieceMoved(gameId, 0, pieceIdx, from, newPos);
+        if (_isAllFinished(games[gameId], 0)) {
+            _endGame(gameId, games[gameId].player);
+            return;
+        }
         _runAITurns(gameId);
+    }
+
+    function _isAllFinished(Game storage g, uint8 seat) internal view returns (bool) {
+        for (uint8 p = 0; p < PIECES; p++) {
+            if (g.pieces[seat][p] != FINISHED_POS) return false;
+        }
+        return true;
     }
 
     function _rollDiceFor(uint256 gameId, uint8 seat) internal returns (uint8) {
@@ -136,7 +147,6 @@ contract Padi is Ownable, ReentrancyGuard {
     function _applyMove(uint256 gameId, uint8 seat, uint8 pieceIdx, uint8 newPos) internal {
         Game storage g = games[gameId];
         g.pieces[seat][pieceIdx] = newPos;
-        // Only capture on main board squares
         if (newPos >= 1 && newPos <= BOARD_SIZE) {
             uint8 myGlobal = _globalPos(seat, newPos);
             if (!_isSafe(myGlobal)) {
@@ -161,5 +171,6 @@ contract Padi is Ownable, ReentrancyGuard {
         }
     }
 
+    function _endGame(uint256 gameId, address winner) internal {}
     function _runAITurns(uint256 gameId) internal {}
 }
