@@ -57,7 +57,6 @@ contract Padi is Ownable, ReentrancyGuard {
         g.aiCount = aiCount;
         g.wager = wagerAmount;
         g.state = GameState.ACTIVE;
-        // All pieces start at base (position 0)
         for (uint8 s = 0; s < 4; s++) {
             for (uint8 p = 0; p < 4; p++) {
                 g.pieces[s][p] = AT_BASE;
@@ -65,5 +64,26 @@ contract Padi is Ownable, ReentrancyGuard {
         }
         playerGames[msg.sender].push(gameId);
         emit GameCreated(gameId, msg.sender, aiCount);
+    }
+
+    function rollDice(uint256 gameId) external {
+        Game storage g = games[gameId];
+        require(g.state == GameState.ACTIVE, "not active");
+        require(g.player == msg.sender, "not player");
+        require(g.currentSeat == 0, "not your turn");
+        require(!g.diceRolled, "already rolled");
+        g.nonce++;
+        uint8 dice = uint8(uint256(keccak256(abi.encodePacked(block.prevrandao, gameId, g.nonce))) % 6) + 1;
+        g.lastDice = dice;
+        g.diceRolled = true;
+        emit DiceRolled(gameId, 0, dice);
+    }
+
+    function _rollDiceFor(uint256 gameId, uint8 seat) internal returns (uint8) {
+        Game storage g = games[gameId];
+        g.nonce++;
+        uint8 dice = uint8(uint256(keccak256(abi.encodePacked(block.prevrandao, gameId, seat, g.nonce))) % 6) + 1;
+        emit DiceRolled(gameId, seat, dice);
+        return dice;
     }
 }
