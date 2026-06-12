@@ -13,9 +13,9 @@ export default function Leaderboard() {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
 
-  const { data: prize } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "weeklyPrizePool" });
-  const { data: totalGamesCount } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "totalGames" });
-  const { data: myWins } = useReadContract({
+  const { data: prize, refetch: refetchPrize } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "weeklyPrizePool" });
+  const { data: totalGamesCount, refetch: refetchGames } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "totalGames" });
+  const { data: myWins, refetch: refetchMy } = useReadContract({
     address: contract, abi: PADI_ABI, functionName: "totalWins",
     args: address ? [address] : undefined,
   });
@@ -27,32 +27,38 @@ export default function Leaderboard() {
   const rows = TOP.map((addr, i) => ({ addr, wins: wins[i]?.data ? Number(wins[i].data) : 0 })).sort((a, b) => b.wins - a.wins);
   const medals = ["🥇", "🥈", "🥉"];
 
+  function refresh() {
+    refetchPrize();
+    refetchGames();
+    refetchMy();
+  }
+
   return (
     <div className="space-y-4">
-      {/* Prize pool banner */}
       <div className="bg-yellow-900/20 border border-yellow-700 rounded-2xl p-4 text-center">
-        <p className="text-xs text-yellow-500 uppercase tracking-wide mb-1">Weekly Prize Pool</p>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-yellow-500 uppercase tracking-wide">Weekly Prize Pool</span>
+          <button onClick={refresh} className="text-xs text-gray-500 hover:text-gray-300">↻ refresh</button>
+        </div>
         <p className="text-3xl font-bold text-yellow-400">
           {prize ? (Number(prize) / 1e18).toFixed(2) : "0.00"} USDM
         </p>
         <p className="text-xs text-gray-400 mt-1">Top players at week's end share this</p>
       </div>
 
-      {/* Global stats */}
-      <div className="bg-gray-900 rounded-2xl p-4 text-center">
-        <p className="text-xs text-gray-500 mb-1">Total Games Played</p>
-        <p className="text-2xl font-bold text-gray-300">{totalGamesCount?.toString() ?? "0"}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gray-900 rounded-2xl p-3 text-center">
+          <p className="text-xs text-gray-500 mb-1">Total Games</p>
+          <p className="text-xl font-bold text-gray-300">{totalGamesCount?.toString() ?? "0"}</p>
+        </div>
+        {address && (
+          <div className="bg-gray-900 rounded-2xl p-3 text-center">
+            <p className="text-xs text-gray-500 mb-1">Your Wins</p>
+            <p className="text-xl font-bold text-red-400">{myWins?.toString() ?? "0"}</p>
+          </div>
+        )}
       </div>
 
-      {/* My stats */}
-      {address && (
-        <div className="bg-gray-900 rounded-2xl p-4 text-center">
-          <p className="text-xs text-gray-500">Your wins vs AI</p>
-          <p className="text-2xl font-bold text-red-400">{myWins?.toString() ?? "0"}</p>
-        </div>
-      )}
-
-      {/* Top players */}
       <div className="bg-gray-900 rounded-2xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-800">
           <p className="text-sm font-semibold text-white">All-Time Leaderboard</p>
@@ -62,9 +68,12 @@ export default function Leaderboard() {
         ) : (
           <div className="divide-y divide-gray-800">
             {rows.map(({ addr, wins }, i) => (
-              <div key={addr} className="flex items-center gap-3 px-4 py-3">
+              <div key={addr} className={`flex items-center gap-3 px-4 py-3 ${addr.toLowerCase() === address?.toLowerCase() ? "bg-gray-800/50" : ""}`}>
                 <span className="text-lg">{medals[i]}</span>
-                <p className="flex-1 text-sm font-mono text-gray-300">{addr.slice(0, 6)}…{addr.slice(-4)}</p>
+                <p className="flex-1 text-sm font-mono text-gray-300">
+                  {addr.slice(0, 6)}…{addr.slice(-4)}
+                  {addr.toLowerCase() === address?.toLowerCase() && <span className="ml-1 text-xs text-red-400"> (you)</span>}
+                </p>
                 <p className="text-white font-bold">{wins} <span className="text-xs text-gray-400">wins</span></p>
               </div>
             ))}
