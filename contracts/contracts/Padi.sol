@@ -52,6 +52,17 @@ contract Padi is Ownable, ReentrancyGuard {
             require(usdm.transferFrom(msg.sender, address(this), wagerAmount), "transfer failed");
         }
         gameId = ++_gameCounter;
+        Game storage g = games[gameId];
+        g.player = msg.sender;
+        g.aiCount = aiCount;
+        g.wager = wagerAmount;
+        g.state = GameState.ACTIVE;
+        // All pieces start at base (position 0)
+        for (uint8 s = 0; s < 4; s++) {
+            for (uint8 p = 0; p < 4; p++) {
+                g.pieces[s][p] = AT_BASE;
+            }
+        }
         playerGames[msg.sender].push(gameId);
         emit GameCreated(gameId, msg.sender, aiCount);
     }
