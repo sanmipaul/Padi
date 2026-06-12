@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { PADI_ADDRESS, PADI_ABI } from "@/lib/contracts";
 import { boardSquareCoords, homeStretchCoords, PLAYER_COLORS } from "@/lib/ludo";
 
@@ -17,10 +17,7 @@ const SEAT_LABELS = ["You", "AI 1", "AI 2", "AI 3"];
 
 type Cell = { seat: number; pieceIdx: number };
 
-function buildGrid(
-  pieces: readonly (readonly number[])[],
-  totalSeats: number
-): (Cell | null)[][] {
+function buildGrid(pieces: readonly (readonly number[])[], totalSeats: number): (Cell | null)[][] {
   const grid: (Cell | null)[][] = Array.from({ length: 15 }, () => Array(15).fill(null));
   for (let s = 0; s < totalSeats; s++) {
     for (let i = 0; i < 4; i++) {
@@ -40,15 +37,7 @@ function buildGrid(
   return grid;
 }
 
-function BoardGrid({
-  grid,
-  canMove,
-  onMove,
-}: {
-  grid: (Cell | null)[][];
-  canMove: boolean;
-  onMove: (pieceIdx: number) => void;
-}) {
+function BoardGrid({ grid, canMove, onMove }: { grid: (Cell | null)[][]; canMove: boolean; onMove: (idx: number) => void }) {
   return (
     <div className="w-full aspect-square bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gridTemplateRows: "repeat(15, 1fr)", width: "100%", height: "100%", gap: "1px" }}>
@@ -66,7 +55,6 @@ function BoardGrid({
             else if (inG) bg = "bg-green-950";
             else if (inB) bg = "bg-blue-950";
             else if (inY) bg = "bg-yellow-950";
-
             const isSafe = (() => {
               for (const sq of SAFE) {
                 if (sq === 0) continue;
@@ -75,13 +63,11 @@ function BoardGrid({
               }
               return false;
             })();
-
             return (
               <div key={`${row}-${col}`}
                 className={`${bg} flex items-center justify-center ${isSafe ? "ring-1 ring-inset ring-yellow-600/30" : ""}`}>
                 {cell && (
-                  <button
-                    onClick={() => canMove && cell.seat === 0 && onMove(cell.pieceIdx)}
+                  <button onClick={() => canMove && cell.seat === 0 && onMove(cell.pieceIdx)}
                     className="w-full h-full flex items-center justify-center"
                     style={{ backgroundColor: PLAYER_COLORS[cell.seat] + "cc" }}>
                     <span className="text-[6px] font-bold text-white">{cell.pieceIdx + 1}</span>
@@ -106,8 +92,11 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
     query: { refetchInterval: 3000 },
   });
 
-  const { writeContract: roll } = useWriteContract();
-  const { writeContract: move } = useWriteContract();
+  const { writeContract: roll, data: rollTx } = useWriteContract();
+  const { writeContract: move, data: moveTx } = useWriteContract();
+  const { isLoading: rollPending } = useWaitForTransactionReceipt({ hash: rollTx });
+  const { isLoading: movePending } = useWaitForTransactionReceipt({ hash: moveTx });
+  const txPending = rollPending || movePending;
 
   if (!gameId) return (
     <div className="text-center py-12">
@@ -119,28 +108,28 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
   if (!game) return <div className="text-center py-12 text-gray-500 text-sm">Loading game...</div>;
 
   const [, pieces, aiCount, currentSeat, lastDice, diceRolled, state, wager, winner] = game as [
-    `0x${string}`,
-    readonly (readonly number[])[],
-    number, number, number, boolean, number, bigint, `0x${string}`
+    `0x${string}`, readonly (readonly number[])[], number, number, number, boolean, number, bigint, `0x${string}`
   ];
 
   const isMyTurn = currentSeat === 0 && state === 0;
-  const canRoll = isMyTurn && !diceRolled;
-  const canMove = isMyTurn && diceRolled;
+  const canRoll = isMyTurn && !diceRolled && !txPending;
+  const canMove = isMyTurn && diceRolled && !txPending;
   const totalSeats = 1 + aiCount;
   const grid = buildGrid(pieces, totalSeats);
 
   function doRoll() {
     roll({ address: contract, abi: PADI_ABI, functionName: "rollDice", args: [gameId!] });
-    setTimeout(() => refetch(), 2000);
+    setTimeout(() => refetch(), 2500);
   }
 
   function doMove(pieceIdx: number) {
     move({ address: contract, abi: PADI_ABI, functionName: "movePiece", args: [gameId!, pieceIdx] });
-    setTimeout(() => refetch(), 3000);
+    setTimeout(() => refetch(), 3500);
   }
 
-  const statusMsg = state === 1
+  const statusMsg = txPending
+    ? "Transaction pending..."
+    : state === 1
     ? winner && winner !== "0x0000000000000000000000000000000000000000"
       ? winner.toLowerCase() === address?.toLowerCase() ? "You won!" : "AI won"
       : "Game Over"
@@ -156,7 +145,9 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
       </div>
 
       <div className="flex justify-between items-center">
-        <p className="text-sm font-medium text-white">{statusMsg}</p>
+        <p className={`text-sm font-medium ${txPending ? "text-yellow-400 animate-pulse" : "text-white"}`}>
+          {statusMsg}
+        </p>
         {wager > 0n && <p className="text-xs text-yellow-400">🏆 {(Number(wager) / 1e18).toFixed(2)} USDM</p>}
       </div>
 
@@ -180,7 +171,7 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
         </div>
         <button onClick={doRoll} disabled={!canRoll}
           className={`flex-1 rounded-xl font-bold text-sm transition-all ${canRoll ? "bg-red-600 hover:bg-red-500 text-white" : "bg-gray-800 text-gray-600 cursor-not-allowed"}`}>
-          {canRoll ? "🎲 Roll" : currentSeat !== 0 ? "AI moving..." : "Pick piece"}
+          {txPending ? "⏳ Pending..." : canRoll ? "🎲 Roll" : currentSeat !== 0 ? "AI moving..." : "Pick piece"}
         </button>
       </div>
 
@@ -192,11 +183,8 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
               const pos = Number(pieces[0]?.[i] ?? 0);
               const canMovePiece = pos !== 59 && (pos !== 0 || lastDice === 6);
               return (
-                <button key={i} onClick={() => canMovePiece && doMove(i)}
-                  disabled={!canMovePiece}
-                  className={`py-2.5 rounded-lg text-sm font-bold text-white transition-colors ${
-                    canMovePiece ? "bg-red-700 hover:bg-red-600" : "bg-gray-800 text-gray-600 cursor-not-allowed"
-                  }`}>
+                <button key={i} onClick={() => canMovePiece && doMove(i)} disabled={!canMovePiece}
+                  className={`py-2.5 rounded-lg text-sm font-bold text-white transition-colors ${canMovePiece ? "bg-red-700 hover:bg-red-600" : "bg-gray-800 text-gray-600 cursor-not-allowed"}`}>
                   {pos === 0 ? "⌂" : pos === 59 ? "✓" : pos}
                 </button>
               );
@@ -208,8 +196,7 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
       {state === 1 && (
         <div className={`rounded-xl p-4 text-center border ${
           winner && winner !== "0x0000000000000000000000000000000000000000" && winner.toLowerCase() === address?.toLowerCase()
-            ? "bg-green-900/30 border-green-600"
-            : "bg-gray-900 border-gray-700"
+            ? "bg-green-900/30 border-green-600" : "bg-gray-900 border-gray-700"
         }`}>
           <p className="font-bold text-lg">
             {winner && winner !== "0x0000000000000000000000000000000000000000"
@@ -217,13 +204,9 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
               : "Game Over"}
           </p>
           {wager > 0n && winner?.toLowerCase() === address?.toLowerCase() && (
-            <p className="text-green-400 text-sm mt-1">
-              {(Number(wager) * 0.99 / 1e18).toFixed(4)} USDM returned to your wallet
-            </p>
+            <p className="text-green-400 text-sm mt-1">{(Number(wager) * 0.99 / 1e18).toFixed(4)} USDM returned</p>
           )}
-          <button onClick={onBack} className="mt-3 text-sm text-gray-400 hover:text-white">
-            Play again →
-          </button>
+          <button onClick={onBack} className="mt-3 text-sm text-gray-400 hover:text-white">Play again →</button>
         </div>
       )}
     </div>
