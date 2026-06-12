@@ -1,0 +1,53 @@
+"use client";
+
+import { useState } from "react";
+import { useAccount } from "wagmi";
+import Lobby from "@/components/Lobby";
+import GameBoard from "@/components/GameBoard";
+import Leaderboard from "@/components/Leaderboard";
+
+type View = "lobby" | "game" | "leaderboard";
+
+export default function Home() {
+  const { isConnected } = useAccount();
+  const [view, setView] = useState<View>("lobby");
+  const [activeGameId, setActiveGameId] = useState<bigint | null>(null);
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+        <div className="text-5xl">🎲</div>
+        <h1 className="text-2xl font-bold text-red-400">Padi</h1>
+        <p className="text-gray-400 text-sm">Opening in MiniPay...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen max-w-md mx-auto px-4 pb-8">
+      <header className="pt-5 pb-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-red-400">🎲 Padi</h1>
+          <p className="text-xs text-gray-500">Ludo vs AI</p>
+        </div>
+        <button onClick={() => setView(v => v === "leaderboard" ? "lobby" : "leaderboard")}
+          className="text-xs text-gray-400 border border-gray-700 px-3 py-1.5 rounded-lg">
+          {view === "leaderboard" ? "← Back" : "Leaderboard"}
+        </button>
+      </header>
+
+      <nav className="flex bg-gray-900 rounded-xl p-1 mb-4 gap-1">
+        {([["lobby", "🏠 Lobby"], ["game", "🎮 My Game"]] as [View, string][]).map(([id, label]) => (
+          <button key={id} onClick={() => setView(id)}
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors ${view === id ? "bg-red-600 text-white" : "text-gray-400"}`}>
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {view === "lobby" && <Lobby onEnterGame={(id) => { setActiveGameId(id); setView("game"); }} />}
+      {view === "game" && <GameBoard gameId={activeGameId} onBack={() => setView("lobby")} />}
+      {view === "leaderboard" && <Leaderboard />}
+    </div>
+  );
+}

@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @notice Padi — on-chain Ludo vs AI opponents on Celo.
 contract Padi is Ownable, ReentrancyGuard {
     IERC20 public immutable usdm;
 
@@ -29,6 +28,13 @@ contract Padi is Ownable, ReentrancyGuard {
         address winner;
         uint256 nonce;
     }
+
+    uint256 private _gameCounter;
+    mapping(uint256 => Game) private games;
+    mapping(address => uint256[]) public playerGames;
+    mapping(address => uint256) public totalWins;
+    uint256 public weeklyPrizePool;
+    uint256 public platformFeeBalance;
 
     constructor(address _usdm) Ownable(msg.sender) {
         usdm = IERC20(_usdm);
