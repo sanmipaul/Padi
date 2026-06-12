@@ -111,6 +111,34 @@ contract Padi is Ownable, ReentrancyGuard {
         return true;
     }
 
+    /// @dev Greedy AI: prefer capturing, then entering board, then advancing most-progressed piece.
+    function _aiPickPiece(Game storage g, uint8 seat, uint8 dice) internal view returns (uint8) {
+        uint8 best = type(uint8).max;
+        uint8 bestScore = 0;
+        for (uint8 p = 0; p < PIECES; p++) {
+            uint8 pos = g.pieces[seat][p];
+            if (pos == FINISHED_POS) continue;
+            if (pos == AT_BASE && dice != 6) continue;
+            uint8 newPos = pos == AT_BASE ? 1 : pos + dice;
+            if (pos > BOARD_SIZE && newPos > FINISHED_POS) continue;
+            uint8 score = pos == AT_BASE ? 50 : pos; // prefer advancing further pieces
+            // Check if this move captures a player piece
+            if (newPos >= 1 && newPos <= BOARD_SIZE) {
+                uint8 myGlobal = _globalPos(seat, newPos);
+                if (!_isSafe(myGlobal)) {
+                    for (uint8 sp = 0; sp < PIECES; sp++) {
+                        uint8 ppos = g.pieces[0][sp];
+                        if (ppos >= 1 && ppos <= BOARD_SIZE && _globalPos(0, ppos) == myGlobal) {
+                            score = 200; // capture is highest priority
+                        }
+                    }
+                }
+            }
+            if (score > bestScore) { bestScore = score; best = p; }
+        }
+        return best;
+    }
+
     function _rollDiceFor(uint256 gameId, uint8 seat) internal returns (uint8) {
         Game storage g = games[gameId];
         g.nonce++;
