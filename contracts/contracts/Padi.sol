@@ -86,4 +86,16 @@ contract Padi is Ownable, ReentrancyGuard {
         emit DiceRolled(gameId, seat, dice);
         return dice;
     }
+
+    function _hasValidMove(Game storage g, uint8 seat, uint8 dice) internal view returns (bool) {
+        for (uint8 p = 0; p < PIECES; p++) {
+            uint8 pos = g.pieces[seat][p];
+            if (pos == FINISHED_POS) continue;
+            if (pos == AT_BASE && dice != 6) continue;
+            uint8 newPos = pos == AT_BASE ? 1 : pos + dice;
+            if (pos > BOARD_SIZE && newPos > FINISHED_POS) continue; // overshoot
+            return true;
+        }
+        return false;
+    }
 }
