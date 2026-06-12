@@ -42,6 +42,8 @@ contract Padi is Ownable, ReentrancyGuard {
     event PieceCaptured(uint256 indexed gameId, uint8 capturerSeat, uint8 capturedSeat, uint8 piece);
     event GameFinished(uint256 indexed gameId, address indexed winner, uint256 prize);
 
+    uint8[8] private SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
+
     constructor(address _usdm) Ownable(msg.sender) {
         usdm = IERC20(_usdm);
     }
@@ -79,6 +81,25 @@ contract Padi is Ownable, ReentrancyGuard {
         emit DiceRolled(gameId, 0, dice);
     }
 
+    function movePiece(uint256 gameId, uint8 pieceIdx) external nonReentrant {
+        Game storage g = games[gameId];
+        require(g.state == GameState.ACTIVE, "not active");
+        require(g.player == msg.sender, "not player");
+        require(g.currentSeat == 0, "not your turn");
+        require(g.diceRolled, "roll first");
+        require(pieceIdx < PIECES, "bad piece");
+        uint8 pos = g.pieces[0][pieceIdx];
+        require(pos != FINISHED_POS, "already home");
+        require(pos != AT_BASE || g.lastDice == 6, "need 6 to leave base");
+        uint8 newPos = pos == AT_BASE ? 1 : pos + g.lastDice;
+        require(!(pos > BOARD_SIZE && newPos > FINISHED_POS), "overshoot");
+        uint8 from = pos;
+        _applyMove(gameId, 0, pieceIdx, newPos);
+        g.diceRolled = false;
+        emit PieceMoved(gameId, 0, pieceIdx, from, newPos);
+        _runAITurns(gameId);
+    }
+
     function _rollDiceFor(uint256 gameId, uint8 seat) internal returns (uint8) {
         Game storage g = games[gameId];
         g.nonce++;
@@ -93,9 +114,15 @@ contract Padi is Ownable, ReentrancyGuard {
             if (pos == FINISHED_POS) continue;
             if (pos == AT_BASE && dice != 6) continue;
             uint8 newPos = pos == AT_BASE ? 1 : pos + dice;
-            if (pos > BOARD_SIZE && newPos > FINISHED_POS) continue; // overshoot
+            if (pos > BOARD_SIZE && newPos > FINISHED_POS) continue;
             return true;
         }
         return false;
     }
+
+    function _applyMove(uint256 gameId, uint8 seat, uint8 pieceIdx, uint8 newPos) internal {
+        games[gameId].pieces[seat][pieceIdx] = newPos;
+    }
+
+    function _runAITurns(uint256 gameId) internal {}
 }
