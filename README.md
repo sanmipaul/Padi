@@ -79,3 +79,15 @@ npm run dev
 - Auto-connects wallet via `window.ethereum` injected by MiniPay
 - No connect button needed
 - Mainnet only (chainId 42220)
+
+## Contract ABI
+
+The ABI is in `frontend/lib/contracts.ts`. Key functions:
+
+| Function | Description |
+|---|---|
+| `createGame(aiCount, wagerAmount)` | Start a new game. Returns `gameId`. |
+| `rollDice(gameId)` | Roll the dice for your turn. |
+| `movePiece(gameId, pieceIdx)` | Move piece 0-3. AI responds in same tx. |
+| `getGame(gameId)` | Read full game state. |
+| `getPlayerGames(address)` | All game IDs for a player. |
