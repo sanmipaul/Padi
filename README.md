@@ -1,46 +1,51 @@
-# Padi 🎲
+# Padi
 
-On-chain Ludo game built for MiniPay on Celo. "Padi" is Nigerian Pidgin for "friend."
+On-chain Ludo vs AI for MiniPay on Celo. "Padi" is Nigerian Pidgin for "friend."
 
-## Overview
+## What it is
 
-Padi brings the classic Nigerian favourite — Ludo — onto the Celo blockchain. Games are **free to play**. Players can optionally wager cUSD for higher-stakes rooms. A weekly prize pool (funded by 0.5% of wager room fees) is distributed to top weekly players.
+A fully on-chain single-player Ludo game. You play against 1, 2, or 3 AI opponents. No waiting for other players. No servers. Every dice roll and AI move happens in the same transaction as your move.
 
-## Features
+## Token
 
-- Free-to-play rooms — no deposit required
-- Optional wager rooms (cUSD stake per player)
-- 2, 3, or 4 player support
-- Full Ludo rules enforced on-chain
-- Weekly prize pool for top players
-- Auto-connect wallet (MiniPay-native)
-- Mobile-first dark UI
+Uses **USDM** (`0x765DE816845861e75A25fCA122bb6898B8B1282a`) on Celo mainnet. Free to play — optional wager for higher stakes.
 
 ## Stack
 
 - **Frontend**: Next.js 14, TailwindCSS, wagmi v2, viem
 - **Contracts**: Solidity 0.8.20, Hardhat, OpenZeppelin
-- **Chain**: Celo mainnet / Alfajores testnet
+- **Chain**: Celo mainnet (chainId 42220)
 
 ## Game Rules
 
-- Each player has 4 pieces starting at base
-- Roll dice to move — roll a 6 to bring a piece out of base
-- Land on opponent → send them home
-- Safe squares protect pieces from being sent home
-- First player to get all 4 pieces to finish wins
-- Optional wager: winner takes pot minus 1% platform fee
+- Each player (you + 1-3 AIs) has 4 pieces, all starting at base
+- Roll a 6 to bring a piece onto the board
+- First to get all 4 pieces to position 59 (home) wins
+- Landing on an opponent sends them back to base (except on safe squares)
+- Safe squares: positions 0, 8, 13, 21, 26, 34, 39, 47
+
+## AI Strategy
+
+AI opponents run entirely on-chain in the same transaction as your move:
+- Greedy capture-first: AI prioritises landing on your pieces
+- If no capture available, advances the furthest piece
+- Uses `keccak256(block.prevrandao, gameId, nonce)` for dice rolls
+
+## Wager
+
+- Free to play by default (no deposit needed)
+- Optional USDM wager — must approve before creating the game
+- If you win: 99% returned, 0.5% to weekly prize pool, 0.5% platform fee
+- If AI wins: full wager to weekly prize pool
 
 ## Project Structure
 
 ```
 padi/
-├── contracts/          # Hardhat project
-│   ├── contracts/
-│   │   └── Padi.sol    # Full on-chain game logic
-│   └── scripts/
-│       └── deploy.ts
-└── frontend/           # Next.js app
+├── contracts/
+│   ├── contracts/Padi.sol      # Full on-chain game + AI
+│   └── scripts/deploy.ts
+└── frontend/
     ├── app/
     ├── components/
     │   ├── Lobby.tsx
@@ -55,12 +60,22 @@ padi/
 ## Setup
 
 ```bash
-# Contracts
-cd contracts && npm install
-npx hardhat compile
-npx hardhat run scripts/deploy.ts --network alfajores
+# 1. Deploy contract
+cd contracts
+npm install
+npx hardhat run scripts/deploy.ts --network celo
 
-# Frontend — update PADI_ADDRESS in lib/contracts.ts after deploy
-cd ../frontend && npm install
+# 2. Update address
+# Set PADI_ADDRESS in frontend/lib/contracts.ts
+
+# 3. Run frontend
+cd ../frontend
+npm install
 npm run dev
 ```
+
+## MiniPay Integration
+
+- Auto-connects wallet via `window.ethereum` injected by MiniPay
+- No connect button needed
+- Mainnet only (chainId 42220)
