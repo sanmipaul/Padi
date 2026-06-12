@@ -33,3 +33,13 @@ export const PADI_ABI = [
 export const ERC20_ABI = [
   { name: "approve", type: "function", stateMutability: "nonpayable", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }] },
 ] as const;
+
+// Additional event — add to PADI_ABI above if needed at runtime
+export const TURN_CHANGED_EVENT = {
+  name: "TurnChanged",
+  type: "event",
+  inputs: [
+    { name: "gameId", type: "uint256", indexed: true },
+    { name: "seat", type: "uint8", indexed: false },
+  ],
+} as const;
