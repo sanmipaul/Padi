@@ -123,7 +123,7 @@ export default function GameBoard({ gameId, onBack }: { gameId: bigint | null; o
 
   if (!game) return <div className="text-center py-12 text-gray-500 text-sm">Loading game...</div>;
 
-  const [, pieces, aiCount, currentSeat, lastDice, diceRolled, state, wager, winner] = game as [
+  const [, pieces, aiCount, currentSeat, lastDice, diceRolled, state, wager, winner] = game as unknown as [
     `0x${string}`, readonly (readonly number[])[], number, number, number, boolean, number, bigint, `0x${string}`
   ];
 
