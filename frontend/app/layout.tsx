@@ -5,6 +5,9 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "Padi",
   description: "On-chain Ludo vs AI. Roll with your padi on Celo.",
+  other: {
+    "talentapp:project_verification": "67bf683c08365cd93e55c9586942803602164d6384f58a87ee1b97bc6ea391520b438dd9adad901add28437f532731ba3df861e6442cf079ced56ca3595729dd",
+  },
 };
 
 export const viewport: Viewport = {
