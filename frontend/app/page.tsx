@@ -20,7 +20,7 @@ function alpha(hex: string, a: number) {
 }
 
 /* ─── Onboarding ─────────────────────────────────────────────────── */
-function OnboardingScreen({ onConnect, isConnecting }: { onConnect: () => void; isConnecting: boolean }) {
+function OnboardingScreen({ onConnect, isConnecting, isMiniPay }: { onConnect: () => void; isConnecting: boolean; isMiniPay: boolean }) {
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", paddingBottom: "28px" }}>
       {/* Rainbow stripe header */}
@@ -60,15 +60,22 @@ function OnboardingScreen({ onConnect, isConnecting }: { onConnect: () => void; 
         </div>
       </div>
 
-      {/* CTA */}
+      {/* CTA — hidden inside MiniPay (wallet is implicit) */}
       <div style={{ padding: "0 26px" }}>
-        <button
-          onClick={onConnect}
-          disabled={isConnecting}
-          style={{ width: "100%", padding: "18px", border: "none", borderRadius: "18px", background: isConnecting ? "rgba(239,75,60,.5)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "18px", letterSpacing: ".3px", cursor: isConnecting ? "default" : "pointer", animation: isConnecting ? "none" : "glowPulse 2.8s ease-in-out infinite", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-          {isConnecting && <span style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block", flexShrink: 0 }} />}
-          {isConnecting ? "Connecting…" : "Connect Wallet"}
-        </button>
+        {isMiniPay ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "9px", padding: "16px", background: "rgba(31,168,92,.12)", border: "1px solid rgba(31,168,92,.3)", borderRadius: "18px" }}>
+            <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 9px #1FA85C", display: "inline-block", animation: "floaty 2s ease-in-out infinite" }} />
+            <span style={{ color: "#8FB99B", fontWeight: 700, fontSize: "15px" }}>Connecting MiniPay…</span>
+          </div>
+        ) : (
+          <button
+            onClick={onConnect}
+            disabled={isConnecting}
+            style={{ width: "100%", padding: "18px", border: "none", borderRadius: "18px", background: isConnecting ? "rgba(239,75,60,.5)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "18px", letterSpacing: ".3px", cursor: isConnecting ? "default" : "pointer", animation: isConnecting ? "none" : "glowPulse 2.8s ease-in-out infinite", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+            {isConnecting && <span style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block", flexShrink: 0 }} />}
+            {isConnecting ? "Connecting…" : "Connect Wallet"}
+          </button>
+        )}
         <p style={{ textAlign: "center", color: "#7d6a58", fontSize: "12px", margin: "14px 0 0" }}>On-chain on Celo · Free to play · Optional USDM stakes</p>
       </div>
     </div>
@@ -224,7 +231,17 @@ export default function Home() {
   const [dailyClaimed, setDailyClaimed] = useState(false);
   const [won, setWon] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [isMiniPay, setIsMiniPay] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-connect when running inside MiniPay (wallet is injected automatically)
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window.ethereum as { isMiniPay?: boolean } | undefined)?.isMiniPay) {
+      setIsMiniPay(true);
+      const connector = connectors[0];
+      if (connector) connect({ connector });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigate to lobby once wallet connects
   useEffect(() => {
@@ -294,7 +311,7 @@ export default function Home() {
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: "auto" }} className="no-scrollbar">
         {screen === "onboarding" && (
-          <OnboardingScreen onConnect={handleConnect} isConnecting={isConnecting} />
+          <OnboardingScreen onConnect={handleConnect} isConnecting={isConnecting} isMiniPay={isMiniPay} />
         )}
 
         {isApp && (

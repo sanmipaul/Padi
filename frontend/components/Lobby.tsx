@@ -34,29 +34,30 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
   const { data: myGames } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "getPlayerGames", args: address ? [address] : undefined });
   const { data: wins } = useReadContract({ address: contract, abi: PADI_ABI, functionName: "totalWins", args: address ? [address] : undefined });
 
-  const { writeContract: approve, data: approveTx } = useWriteContract();
-  const { writeContract: create, data: createTx } = useWriteContract();
-  const { isSuccess: approveOk, isLoading: approving } = useWaitForTransactionReceipt({ hash: approveTx });
-  const { isSuccess: createOk, isLoading: creating, data: createReceipt } = useWaitForTransactionReceipt({ hash: createTx });
+  // isPending = true while wallet popup is open (before tx hash is returned)
+  const { writeContract: approve, data: approveTx, isPending: approveSubmitting, error: approveError } = useWriteContract();
+  const { writeContract: create,  data: createTx,  isPending: createSubmitting,  error: createError  } = useWriteContract();
 
-  const busy = approving || creating;
+  // isLoading = true while waiting for the tx to be mined
+  const { isSuccess: approveOk, isLoading: approveWaiting } = useWaitForTransactionReceipt({ hash: approveTx });
+  const { isSuccess: createOk,  isLoading: createWaiting, data: createReceipt } = useWaitForTransactionReceipt({ hash: createTx });
+
+  const busy = approveSubmitting || approveWaiting || createSubmitting || createWaiting;
+
   const prizeDisplay = prizePool ? (Number(prizePool) / 1e18).toFixed(1) : "0.0";
-  const winsDisplay = wins ? Number(wins) : 0;
+  const winsDisplay  = wins            ? Number(wins)            : 0;
   const totalDisplay = totalGamesCount ? Number(totalGamesCount) : 0;
 
-  function handleCreate() {
-    if (busy) return;
-    const wagerBN = wagerOn ? parseUnits((parseFloat(wager) || 0.25).toFixed(18), 18) : 0n;
-    if (wagerBN > 0n) {
-      setPendingWager(wagerBN);
-      showToast("Approving USDM…", "#F2A916");
-      approve({ address: USDM_ADDRESS as `0x${string}`, abi: ERC20_ABI, functionName: "approve", args: [contract, wagerBN] });
-    } else {
-      showToast("Creating game…", "#1FA85C");
-      create({ address: contract, abi: PADI_ABI, functionName: "createGame", args: [aiCount, 0n] });
-    }
-  }
+  // Show error toasts so the user always knows what went wrong
+  useEffect(() => {
+    if (approveError) showToast("Approval failed — try again.", "#EF4B3C");
+  }, [approveError]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (createError) showToast("Transaction failed — try again.", "#EF4B3C");
+  }, [createError]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // After USDM approval, send the createGame tx
   useEffect(() => {
     if (approveOk && pendingWager > 0n && !createTx) {
       showToast("Creating game…", "#1FA85C");
@@ -64,18 +65,45 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
     }
   }, [approveOk]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Navigate into the game once the receipt is confirmed
   useEffect(() => {
     if (createOk && createReceipt) {
-      const log = createReceipt.logs[0];
-      if (log) {
-        try { onEnterGame(BigInt(log.topics[1] || "0")); } catch { /* */ }
+      // GameCreated event: topics[1] = gameId (indexed uint256)
+      const log = createReceipt.logs.find(
+        (l) => l.topics[0]?.toLowerCase() !== undefined && l.topics[1] !== undefined
+      ) ?? createReceipt.logs[0];
+      if (log?.topics[1]) {
+        try {
+          onEnterGame(BigInt(log.topics[1]));
+        } catch {
+          showToast("Game created! Pick it from your list below.", "#F2A916");
+        }
+      } else {
+        showToast("Game created! Pick it from your list below.", "#F2A916");
       }
     }
   }, [createOk, createReceipt]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const statusLabel = busy
-    ? approving ? "Approving…" : "Creating…"
-    : wagerOn ? `stake ${wager} USDM` : "free";
+  function handleCreate() {
+    if (busy) return;
+    if (wagerOn) {
+      const wagerBN = parseUnits((parseFloat(wager) || 0.25).toFixed(18), 18);
+      setPendingWager(wagerBN);
+      showToast("Approving USDM…", "#F2A916");
+      approve({ address: USDM_ADDRESS as `0x${string}`, abi: ERC20_ABI, functionName: "approve", args: [contract, wagerBN] });
+    } else {
+      showToast("Confirm in your wallet…", "#1FA85C");
+      create({ address: contract, abi: PADI_ABI, functionName: "createGame", args: [aiCount, 0n] });
+    }
+  }
+
+  const btnLabel = (() => {
+    if (approveSubmitting) return "Check your wallet…";
+    if (approveWaiting)    return "Approving USDM…";
+    if (createSubmitting)  return "Check your wallet…";
+    if (createWaiting)     return "Creating game…";
+    return `Start game · ${wagerOn ? `stake ${wager} USDM` : "free"}`;
+  })();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "13px" }}>
@@ -85,7 +113,7 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
         <div style={{ position: "absolute", right: "-30px", top: "-30px", width: "150px", height: "150px", background: "repeating-conic-gradient(from 0deg,#F2A916 0 11deg,transparent 11deg 22deg)", opacity: 0.1, borderRadius: "50%" }} />
         <p style={{ margin: 0, color: "#C99A2E", fontSize: "11px", fontWeight: 800, letterSpacing: "1.5px" }}>WEEKLY PRIZE POOL</p>
         <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "6px 0 0", position: "relative" }}>
-          <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "42px", color: "#F4C95A", textShadow: "0 0 24px rgba(242,169,22,.35)", lineHeight: 1 }}>{prizeDisplay}</span>
+          <span style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "42px", color: "#F4C95A", textShadow: "0 0 24px rgba(242,169,22,.35)", lineHeight: 1 }}>{prizeDisplay}</span>
           <span style={{ color: "#C99A2E", fontWeight: 700, fontSize: "15px" }}>USDM</span>
         </div>
         <div style={{ display: "flex", gap: "14px", marginTop: "10px" }}>
@@ -114,12 +142,12 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
       {/* Stats Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
         {[
-          { value: winsDisplay, label: "Wins", color: "#EF4B3C" },
-          { value: streak, label: "Streak", color: "#F2A916" },
-          { value: totalDisplay || gamesPlayed, label: "Games", color: "#FBEFE0" },
+          { value: winsDisplay,                   label: "Wins",   color: "#EF4B3C" },
+          { value: streak,                         label: "Streak", color: "#F2A916" },
+          { value: totalDisplay || gamesPlayed,    label: "Games",  color: "#FBEFE0" },
         ].map(({ value, label, color }) => (
           <div key={label} style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px 8px", textAlign: "center" }}>
-            <p style={{ margin: 0, fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "24px", color }}>{value}</p>
+            <p style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "24px", color }}>{value}</p>
             <p style={{ margin: "1px 0 0", color: "#8c7866", fontSize: "11px", fontWeight: 600 }}>{label}</p>
           </div>
         ))}
@@ -127,7 +155,7 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
 
       {/* New Game Card */}
       <div style={{ background: "rgba(255,238,214,.035)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "22px", padding: "18px" }}>
-        <p style={{ margin: "0 0 3px", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "19px", color: "#FBEFE0" }}>New game</p>
+        <p style={{ margin: "0 0 3px", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "19px", color: "#FBEFE0" }}>New game</p>
         <p style={{ margin: "0 0 14px", color: "#A8927C", fontSize: "13px" }}>How many padis are you taking on?</p>
 
         {/* AI count selector */}
@@ -137,7 +165,7 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
             const subs: Record<number, string> = { 1: "Solo padi", 2: "Two padis", 3: "Full house" };
             return (
               <button key={n} onClick={() => setAiCount(n)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", padding: "12px 4px", borderRadius: "14px", cursor: "pointer", background: active ? "rgba(239,75,60,.14)" : "rgba(255,238,214,.04)", border: `1px solid ${active ? "#EF4B3C" : "rgba(255,238,214,.09)"}` }}>
-                <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "22px", color: active ? "#EF4B3C" : "#C9B49C" }}>{n}</span>
+                <span style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "22px", color: active ? "#EF4B3C" : "#C9B49C" }}>{n}</span>
                 <span style={{ fontSize: "10px", fontWeight: 600, color: active ? "#EF8C7E" : "#8c7866" }}>{subs[n]}</span>
               </button>
             );
@@ -180,9 +208,15 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
         )}
 
         {/* Start button */}
-        <button onClick={handleCreate} disabled={busy} style={{ width: "100%", marginTop: "16px", padding: "16px", border: "none", borderRadius: "16px", background: busy ? "rgba(239,75,60,.4)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "17px", cursor: busy ? "default" : "pointer", boxShadow: busy ? "none" : "0 12px 26px -10px rgba(239,75,60,.7)", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-          {busy && <span style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block", flexShrink: 0 }} />}
-          {busy ? (approving ? "Approving…" : "Creating…") : `Start game · ${statusLabel}`}
+        <button
+          onClick={handleCreate}
+          disabled={busy}
+          style={{ width: "100%", marginTop: "16px", padding: "16px", border: "none", borderRadius: "16px", background: busy ? "rgba(239,75,60,.45)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "17px", cursor: busy ? "default" : "pointer", boxShadow: busy ? "none" : "0 12px 26px -10px rgba(239,75,60,.7)", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}
+        >
+          {busy && (
+            <span style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block", flexShrink: 0 }} />
+          )}
+          {btnLabel}
         </button>
       </div>
 
