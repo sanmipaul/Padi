@@ -68,16 +68,14 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
   // Navigate into the game once the receipt is confirmed
   useEffect(() => {
     if (createOk && createReceipt) {
-      // GameCreated event: topics[1] = gameId (indexed uint256)
+      // keccak256("GameCreated(uint256,address,uint8)") — must match exactly to avoid
+      // picking up the USDM Transfer log that comes first in staked games
+      const GAME_CREATED_TOPIC = "0xdd0abcdffc76581d11646898ee4d7f269ca1e0c0b622d072d343100dad83ecb1";
       const log = createReceipt.logs.find(
-        (l) => l.topics[0]?.toLowerCase() !== undefined && l.topics[1] !== undefined
-      ) ?? createReceipt.logs[0];
+        (l) => l.topics[0]?.toLowerCase() === GAME_CREATED_TOPIC
+      );
       if (log?.topics[1]) {
-        try {
-          onEnterGame(BigInt(log.topics[1]));
-        } catch {
-          showToast("Game created! Pick it from your list below.", "#F2A916");
-        }
+        onEnterGame(BigInt(log.topics[1]));
       } else {
         showToast("Game created! Pick it from your list below.", "#F2A916");
       }
@@ -87,7 +85,7 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
   function handleCreate() {
     if (busy) return;
     if (wagerOn) {
-      const wagerBN = parseUnits((parseFloat(wager) || 0.25).toFixed(18), 18);
+      const wagerBN = parseUnits(wager, 18);
       setPendingWager(wagerBN);
       showToast("Approving USDM…", "#F2A916");
       approve({ address: USDM_ADDRESS as `0x${string}`, abi: ERC20_ABI, functionName: "approve", args: [contract, wagerBN] });
