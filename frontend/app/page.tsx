@@ -221,6 +221,11 @@ export default function Home() {
   const { address, isConnected, isConnecting } = useAccount();
   const { connect, connectors } = useConnect();
 
+  // Mount guard: wagmi with ssr:false still server-renders in Next.js App Router.
+  // The server has no wallet (isConnected=false) while the client may already be
+  // connected, causing React hydration error #418. Render nothing until mounted.
+  const [mounted, setMounted] = useState(false);
+
   const [screen, setScreen] = useState<Screen>("onboarding");
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [gameId, setGameId] = useState<bigint | null>(null);
@@ -233,6 +238,9 @@ export default function Home() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isMiniPay, setIsMiniPay] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Mark as mounted so we skip the server-rendered shell entirely
+  useEffect(() => { setMounted(true); }, []);
 
   // Auto-connect when running inside MiniPay (wallet is injected automatically)
   useEffect(() => {
@@ -296,6 +304,8 @@ export default function Home() {
   }
 
   const isApp = screen === "lobby" || screen === "game" || screen === "ranks";
+
+  if (!mounted) return null;
 
   return (
     <div style={{ width: "100%", maxWidth: "462px", margin: "0 auto", minHeight: "100dvh", position: "relative", display: "flex", flexDirection: "column", background: "linear-gradient(180deg,#1d1208 0%,#150d06 58%,#100a05 100%)", boxShadow: "0 0 90px rgba(0,0,0,.65)", overflow: "hidden" }}>
