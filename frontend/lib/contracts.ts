@@ -1,12 +1,13 @@
 // USDM on Celo mainnet — same address as legacy cUSD, rebranded
 export const USDM_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a" as const;
 
-export const PADI_ADDRESS = "0x17D0a320402aB6Cd7bC5Fe28F10c58c131014650" as `0x${string}`;
+export const PADI_ADDRESS = "0x5E2a57CE2837CB0342B07aCc3e06eb4A92dd3256" as `0x${string}`;
 
 export const PADI_ABI = [
   { name: "createGame", type: "function", stateMutability: "nonpayable", inputs: [{ name: "aiCount", type: "uint8" }, { name: "wagerAmount", type: "uint256" }], outputs: [{ name: "gameId", type: "uint256" }] },
   { name: "rollDice", type: "function", stateMutability: "nonpayable", inputs: [{ name: "gameId", type: "uint256" }], outputs: [] },
   { name: "movePiece", type: "function", stateMutability: "nonpayable", inputs: [{ name: "gameId", type: "uint256" }, { name: "pieceIdx", type: "uint8" }], outputs: [] },
+  { name: "completeBatch", type: "function", stateMutability: "nonpayable", inputs: [{ name: "gameId", type: "uint256" }, { name: "suggestedPieces", type: "uint8[]" }], outputs: [] },
   {
     name: "getGame", type: "function", stateMutability: "view",
     inputs: [{ name: "gameId", type: "uint256" }],

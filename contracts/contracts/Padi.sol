@@ -107,6 +107,64 @@ contract Padi is Ownable, ReentrancyGuard {
         _runAITurns(gameId);
     }
 
+    /// @notice Play the entire game in one transaction.
+    /// @param suggestedPieces  One piece index per player turn. If a suggested piece
+    ///                         is invalid for the dice that gets rolled the contract
+    ///                         falls back to the first valid piece, or skips the turn.
+    function completeBatch(uint256 gameId, uint8[] calldata suggestedPieces) external nonReentrant {
+        Game storage g = games[gameId];
+        require(g.state  == GameState.ACTIVE, "not active");
+        require(g.player == msg.sender,       "not player");
+        require(g.currentSeat == 0,           "not player turn");
+        require(!g.diceRolled,                "has pending roll");
+
+        for (uint256 i = 0; i < suggestedPieces.length; i++) {
+            if (g.state != GameState.ACTIVE) break;
+
+            // Roll dice for the player
+            uint8 dice = _rollDiceFor(gameId, 0);
+
+            // Find which piece to move (suggested → fall back → skip)
+            uint8 pieceIdx = type(uint8).max;
+            if (_isPieceMovable(g, suggestedPieces[i], dice)) {
+                pieceIdx = suggestedPieces[i];
+            } else {
+                for (uint8 p = 0; p < PIECES; p++) {
+                    if (_isPieceMovable(g, p, dice)) { pieceIdx = p; break; }
+                }
+            }
+
+            if (pieceIdx == type(uint8).max) {
+                // No valid move — pass turn to AI
+                _runAITurns(gameId);
+                continue;
+            }
+
+            uint8 pos    = g.pieces[0][pieceIdx];
+            uint8 newPos = pos == AT_BASE ? 1 : pos + dice;
+            uint8 from   = pos;
+            _applyMove(gameId, 0, pieceIdx, newPos);
+            emit PieceMoved(gameId, 0, pieceIdx, from, newPos);
+
+            if (_isAllFinished(games[gameId], 0)) {
+                _endGame(gameId, games[gameId].player);
+                return;
+            }
+
+            _runAITurns(gameId);
+        }
+    }
+
+    function _isPieceMovable(Game storage g, uint8 pieceIdx, uint8 dice) internal view returns (bool) {
+        if (pieceIdx >= PIECES) return false;
+        uint8 pos = g.pieces[0][pieceIdx];
+        if (pos == FINISHED_POS) return false;
+        if (pos == AT_BASE && dice != 6) return false;
+        uint8 newPos = pos == AT_BASE ? 1 : pos + dice;
+        if (pos > BOARD_SIZE && newPos > FINISHED_POS) return false;
+        return true;
+    }
+
     function getGame(uint256 gameId) external view returns (
         address player, uint8[4][4] memory pieces, uint8 aiCount,
         uint8 currentSeat, uint8 lastDice, bool diceRolled,
