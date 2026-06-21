@@ -19,9 +19,7 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: {
-      celo: process.env.CELOSCAN_API_KEY ?? "",
-    },
+    apiKey: process.env.CELOSCAN_API_KEY ?? "",
     customChains: [
       {
         network: "celo",
