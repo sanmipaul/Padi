@@ -19,49 +19,62 @@ function alpha(hex: string, a: number) {
   return hex + Math.round(a * 255).toString(16).padStart(2, "0");
 }
 
-/* ─── Onboarding ─────────────────────────────────────────────────── */
-function OnboardingScreen({ onConnect, isConnecting, isMiniPay }: { onConnect: () => void; isConnecting: boolean; isMiniPay: boolean }) {
+/* ─── Landing Page ───────────────────────────────────────────────── */
+function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => void; isConnecting: boolean; isMiniPay: boolean }) {
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", paddingBottom: "28px" }}>
-      {/* Rainbow stripe header */}
-      <div style={{ height: "70px", background: "repeating-linear-gradient(135deg,#EF4B3C 0 16px,#F2A916 16px 32px,#1FA85C 32px 48px,#3D6BFF 48px 64px)", opacity: 0.9 }} />
-      <div style={{ position: "absolute", top: "70px", left: 0, right: 0, height: "30px", background: "linear-gradient(180deg,rgba(29,18,8,0),#1d1208)" }} />
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 18% 30%,rgba(242,169,22,.13),transparent 26%),radial-gradient(circle at 88% 64%,rgba(61,107,255,.12),transparent 30%)", pointerEvents: "none" }} />
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+      {/* Background glows */}
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse 80% 40% at 50% 0%,rgba(239,75,60,.18),transparent 60%),radial-gradient(circle at 15% 60%,rgba(242,169,22,.1),transparent 36%),radial-gradient(circle at 90% 40%,rgba(61,107,255,.1),transparent 36%)", pointerEvents: "none" }} />
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "26px", padding: "6px 26px 0", position: "relative" }}>
-        {/* Logo */}
-        <div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: "7px" }}>
-            <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "68px", lineHeight: 0.86, letterSpacing: "-3px", color: "#FBEFE0" }}>padi</span>
-            <span style={{ width: "15px", height: "15px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "15px", boxShadow: "0 0 18px #EF4B3C", animation: "floaty 3s ease-in-out infinite", display: "inline-block" }} />
-          </div>
-          <p style={{ color: "#C9B49C", fontSize: "16px", margin: "16px 0 0", lineHeight: 1.55, maxWidth: "310px" }}>
-            Play Ludo with your AI <span style={{ color: "#F2A916", fontWeight: 700 }}>padi</span>. Roll the dice, chase them down, and send them packing — all on-chain.
-          </p>
+      {/* Top bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 24px 0", position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "5px" }}>
+          <span style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "28px", letterSpacing: "-1.2px", color: "#FBEFE0" }}>padi</span>
+          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "5px", boxShadow: "0 0 10px #EF4B3C", display: "inline-block" }} />
         </div>
-
-        {/* Feature cards */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "11px" }}>
-          {[
-            { icon: "3", iconBg: "rgba(239,75,60,.16)", iconColor: "#EF4B3C", title: "Outsmart up to 3 AI padis", sub: "Chidi, Amaka & Tunde each play their own way", isBricolage: true },
-            { icon: "★", iconBg: "rgba(242,169,22,.16)", iconColor: "#F2A916", title: "Win the weekly pot", sub: "Climb the board, share the USDM prize pool", isBricolage: false },
-            { icon: "◎", iconBg: "rgba(31,168,92,.16)", iconColor: "#1FA85C", title: "Daily cowries & streaks", sub: "Come back each day, stack your rewards", isBricolage: false },
-          ].map((f, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.045)", border: "1px solid rgba(247,179,43,.14)", borderRadius: "16px", padding: "13px 15px" }}>
-              <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: f.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ color: f.iconColor, fontFamily: f.isBricolage ? "var(--font-bricolage), 'Bricolage Grotesque', sans-serif" : undefined, fontWeight: f.isBricolage ? 800 : 400, fontSize: "22px" }}>{f.icon}</span>
-              </div>
-              <div>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: "15px" }}>{f.title}</p>
-                <p style={{ margin: "2px 0 0", color: "#A8927C", fontSize: "13px" }}>{f.sub}</p>
-              </div>
-            </div>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(31,168,92,.12)", border: "1px solid rgba(31,168,92,.3)", borderRadius: "999px", padding: "5px 12px" }}>
+          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#1FA85C", display: "inline-block" }} />
+          <span style={{ color: "#6FA582", fontWeight: 700, fontSize: "11px" }}>Celo Mainnet</span>
         </div>
       </div>
 
-      {/* CTA — hidden inside MiniPay (wallet is implicit) */}
-      <div style={{ padding: "0 26px" }}>
+      {/* Hero */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "30px 28px 0", textAlign: "center", position: "relative", gap: "8px" }}>
+        {/* Colour circles — visual hint of Ludo pieces */}
+        <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+          {["#EF4B3C","#1FA85C","#3D6BFF","#F2A916"].map((c, i) => (
+            <div key={i} style={{ width: "18px", height: "18px", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.7),${c} 65%)`, boxShadow: `0 0 12px ${c}88`, animation: `floaty ${2.6 + i * 0.4}s ease-in-out ${i * 0.3}s infinite` }} />
+          ))}
+        </div>
+
+        <h1 style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "62px", lineHeight: 0.9, letterSpacing: "-3px", color: "#FBEFE0", margin: 0 }}>
+          padi
+        </h1>
+        <p style={{ color: "#F2A916", fontWeight: 700, fontSize: "14px", letterSpacing: "2.5px", textTransform: "uppercase", margin: "10px 0 0" }}>On-chain Ludo on Celo</p>
+        <p style={{ color: "#A8927C", fontSize: "15px", lineHeight: 1.6, maxWidth: "290px", margin: "12px 0 0" }}>
+          Roll the dice. Chase your AI <span style={{ color: "#FBEFE0", fontWeight: 600 }}>padis</span> off the board. Win real USDM — zero signatures during play.
+        </p>
+      </div>
+
+      {/* Feature cards */}
+      <div style={{ padding: "28px 24px 0", display: "flex", flexDirection: "column", gap: "10px", position: "relative" }}>
+        {[
+          { dot: "#EF4B3C", title: "Play vs up to 3 AI padis", sub: "Chidi, Amaka & Tunde — each with a personality" },
+          { dot: "#F2A916", title: "Wager USDM, win 99%", sub: "One signature to start, one to settle. That's it." },
+          { dot: "#1FA85C", title: "Daily streaks & prize pool", sub: "Show up every day, stack cowries & climb the ranks" },
+        ].map((f, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "14px", padding: "12px 14px" }}>
+            <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: f.dot, boxShadow: `0 0 8px ${f.dot}`, flexShrink: 0 }} />
+            <div>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: "14px", color: "#FBEFE0" }}>{f.title}</p>
+              <p style={{ margin: "2px 0 0", color: "#7d6a58", fontSize: "12px" }}>{f.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <div style={{ padding: "24px 24px 36px", position: "relative" }}>
         {isMiniPay ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "9px", padding: "16px", background: "rgba(31,168,92,.12)", border: "1px solid rgba(31,168,92,.3)", borderRadius: "18px" }}>
             <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 9px #1FA85C", display: "inline-block", animation: "floaty 2s ease-in-out infinite" }} />
@@ -71,12 +84,21 @@ function OnboardingScreen({ onConnect, isConnecting, isMiniPay }: { onConnect: (
           <button
             onClick={onConnect}
             disabled={isConnecting}
-            style={{ width: "100%", padding: "18px", border: "none", borderRadius: "18px", background: isConnecting ? "rgba(239,75,60,.5)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "18px", letterSpacing: ".3px", cursor: isConnecting ? "default" : "pointer", animation: isConnecting ? "none" : "glowPulse 2.8s ease-in-out infinite", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-            {isConnecting && <span style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block", flexShrink: 0 }} />}
-            {isConnecting ? "Connecting…" : "Connect Wallet"}
+            style={{ width: "100%", padding: "18px", border: "none", borderRadius: "18px", background: isConnecting ? "rgba(239,75,60,.45)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "18px", letterSpacing: ".3px", cursor: isConnecting ? "default" : "pointer", animation: isConnecting ? "none" : "glowPulse 2.8s ease-in-out infinite", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", boxShadow: "0 18px 40px -14px rgba(239,75,60,.6)" }}>
+            {isConnecting ? (
+              <>
+                <span style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block", flexShrink: 0 }} />
+                Connecting…
+              </>
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+                Connect Wallet
+              </>
+            )}
           </button>
         )}
-        <p style={{ textAlign: "center", color: "#7d6a58", fontSize: "12px", margin: "14px 0 0" }}>On-chain on Celo · Free to play · Optional USDM stakes</p>
+        <p style={{ textAlign: "center", color: "#5a4a3a", fontSize: "11px", margin: "12px 0 0" }}>Free to play · Optional USDM wagers · Fully on-chain</p>
       </div>
     </div>
   );
@@ -85,30 +107,54 @@ function OnboardingScreen({ onConnect, isConnecting, isMiniPay }: { onConnect: (
 /* ─── App Bar ─────────────────────────────────────────────────────── */
 function AppBar({ address, cowries, streak }: { address?: string; cowries: number; streak: number }) {
   const { disconnect } = useDisconnect();
+  const [showDisconnect, setShowDisconnect] = useState(false);
+
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 10px" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 10px", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
         <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "26px", letterSpacing: "-1px", color: "#FBEFE0" }}>padi</span>
         <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "6px", boxShadow: "0 0 8px #EF4B3C", display: "inline-block" }} />
       </div>
-      <div style={{ display: "flex", gap: "9px" }}>
+      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
         {/* Streak */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(242,169,22,.13)", border: "1px solid rgba(242,169,22,.3)", borderRadius: "999px", padding: "6px 12px" }}>
           <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#F2A916", boxShadow: "0 0 8px #F2A916", display: "inline-block" }} />
           <span style={{ color: "#F2A916", fontWeight: 800, fontSize: "13px" }}>{streak}</span>
           <span style={{ color: "#C99A2E", fontWeight: 600, fontSize: "11px" }}>day</span>
         </div>
-        {/* Cowries + address */}
-        <button
-          onClick={() => disconnect()}
-          title="Disconnect wallet"
-          style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.18)", borderRadius: "999px", padding: "6px 12px", cursor: "pointer" }}>
-          <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", display: "inline-block", flexShrink: 0 }} />
+        {/* Cowries */}
+        <div style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.14)", borderRadius: "999px", padding: "6px 11px" }}>
+          <span style={{ width: "13px", height: "13px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", display: "inline-block", flexShrink: 0 }} />
           <span style={{ color: "#F4D8A8", fontWeight: 800, fontSize: "13px" }}>{cowries.toLocaleString()}</span>
-          {address && (
-            <span style={{ color: "#A8927C", fontWeight: 600, fontSize: "11px" }}>{address.slice(0, 4)}…{address.slice(-3)}</span>
+        </div>
+        {/* Wallet chip → tapping shows disconnect */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowDisconnect(v => !v)}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.18)", borderRadius: "999px", padding: "6px 11px", cursor: "pointer" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 6px #1FA85C", display: "inline-block" }} />
+            <span style={{ color: "#A8927C", fontWeight: 600, fontSize: "11px" }}>
+              {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "Connected"}
+            </span>
+          </button>
+          {/* Disconnect dropdown */}
+          {showDisconnect && (
+            <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 40, background: "#1e1108", border: "1px solid rgba(247,179,43,.2)", borderRadius: "14px", padding: "6px", minWidth: "160px", boxShadow: "0 16px 36px -12px #000" }}>
+              {address && (
+                <div style={{ padding: "8px 12px 6px", borderBottom: "1px solid rgba(255,238,214,.07)", marginBottom: "4px" }}>
+                  <p style={{ margin: 0, color: "#6f5d4c", fontSize: "10px", fontWeight: 600 }}>CONNECTED AS</p>
+                  <p style={{ margin: "2px 0 0", color: "#A8927C", fontSize: "12px", fontWeight: 600, wordBreak: "break-all" }}>{address.slice(0, 10)}…{address.slice(-6)}</p>
+                </div>
+              )}
+              <button
+                onClick={() => { disconnect(); setShowDisconnect(false); }}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: "9px", padding: "10px 12px", borderRadius: "10px", background: "rgba(239,75,60,.1)", border: "1px solid rgba(239,75,60,.2)", color: "#EF4B3C", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Disconnect Wallet
+              </button>
+            </div>
           )}
-        </button>
+        </div>
       </div>
     </div>
   );
@@ -321,7 +367,7 @@ export default function Home() {
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: "auto" }} className="no-scrollbar">
         {screen === "onboarding" && (
-          <OnboardingScreen onConnect={handleConnect} isConnecting={isConnecting} isMiniPay={isMiniPay} />
+          <LandingPage onConnect={handleConnect} isConnecting={isConnecting} isMiniPay={isMiniPay} />
         )}
 
         {isApp && (
