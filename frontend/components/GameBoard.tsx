@@ -161,7 +161,7 @@ const DOT_POSITIONS: Record<number, number[]> = {
 function Die({ face, rolling }: { face: number; rolling: boolean }) {
   const on = new Set(DOT_POSITIONS[face] ?? [4]);
   return (
-    <div style={{ width: "54px", height: "54px", flexShrink: 0, borderRadius: "14px", background: "linear-gradient(145deg,#fff,#efe1c9)", boxShadow: "0 6px 14px -4px rgba(0,0,0,.6),inset 0 -3px 4px rgba(0,0,0,.1)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "1fr 1fr 1fr", padding: "9px", animation: rolling ? "diceShake .2s infinite" : "none" }}>
+    <div style={{ width: "clamp(44px,13vw,56px)", height: "clamp(44px,13vw,56px)", flexShrink: 0, borderRadius: "14px", background: "linear-gradient(145deg,#fff,#efe1c9)", boxShadow: "0 6px 14px -4px rgba(0,0,0,.6),inset 0 -3px 4px rgba(0,0,0,.1)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "1fr 1fr 1fr", padding: "clamp(6px,2.2vw,10px)", animation: rolling ? "diceShake .2s infinite" : "none" }}>
       {Array.from({ length: 9 }, (_, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
           {on.has(i) && <div style={{ width: "62%", height: "62%", borderRadius: "50%", background: "#22150a" }} />}

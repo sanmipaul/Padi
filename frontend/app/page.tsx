@@ -27,7 +27,7 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
       <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse 80% 40% at 50% 0%,rgba(239,75,60,.18),transparent 60%),radial-gradient(circle at 15% 60%,rgba(242,169,22,.1),transparent 36%),radial-gradient(circle at 90% 40%,rgba(61,107,255,.1),transparent 36%)", pointerEvents: "none" }} />
 
       {/* Top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 24px 0", position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px clamp(16px,5vw,28px) 0", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "flex-end", gap: "5px" }}>
           <span style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "28px", letterSpacing: "-1.2px", color: "#FBEFE0" }}>padi</span>
           <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "5px", boxShadow: "0 0 10px #EF4B3C", display: "inline-block" }} />
@@ -47,17 +47,17 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
           ))}
         </div>
 
-        <h1 style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "62px", lineHeight: 0.9, letterSpacing: "-3px", color: "#FBEFE0", margin: 0 }}>
+        <h1 className="hero-h1" style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "clamp(46px,15vw,72px)", lineHeight: 0.9, letterSpacing: "clamp(-2px,-0.05em,-3px)", color: "#FBEFE0", margin: 0 }}>
           padi
         </h1>
-        <p style={{ color: "#F2A916", fontWeight: 700, fontSize: "14px", letterSpacing: "2.5px", textTransform: "uppercase", margin: "10px 0 0" }}>On-chain Ludo on Celo</p>
-        <p style={{ color: "#A8927C", fontSize: "15px", lineHeight: 1.6, maxWidth: "290px", margin: "12px 0 0" }}>
+        <p style={{ color: "#F2A916", fontWeight: 700, fontSize: "clamp(12px,3.5vw,14px)", letterSpacing: "2.5px", textTransform: "uppercase", margin: "10px 0 0" }}>On-chain Ludo on Celo</p>
+        <p style={{ color: "#A8927C", fontSize: "clamp(13px,3.8vw,15px)", lineHeight: 1.6, maxWidth: "min(290px, 85vw)", margin: "12px 0 0" }}>
           Roll the dice. Chase your AI <span style={{ color: "#FBEFE0", fontWeight: 600 }}>padis</span> off the board. Win real USDM — zero signatures during play.
         </p>
       </div>
 
       {/* Feature cards */}
-      <div style={{ padding: "28px 24px 0", display: "flex", flexDirection: "column", gap: "10px", position: "relative" }}>
+      <div style={{ padding: "28px clamp(16px,5vw,28px) 0", display: "flex", flexDirection: "column", gap: "10px", position: "relative" }}>
         {[
           { dot: "#EF4B3C", title: "Play vs up to 3 AI padis", sub: "Chidi, Amaka & Tunde — each with a personality" },
           { dot: "#F2A916", title: "Wager USDM, win 99%", sub: "One signature to start, one to settle. That's it." },
@@ -74,7 +74,7 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
       </div>
 
       {/* CTA */}
-      <div style={{ padding: "24px 24px 36px", position: "relative" }}>
+      <div style={{ padding: "24px clamp(16px,5vw,28px) max(28px,env(safe-area-inset-bottom,36px))", position: "relative" }}>
         {isMiniPay ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "9px", padding: "16px", background: "rgba(31,168,92,.12)", border: "1px solid rgba(31,168,92,.3)", borderRadius: "18px" }}>
             <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 9px #1FA85C", display: "inline-block", animation: "floaty 2s ease-in-out infinite" }} />
@@ -110,31 +110,31 @@ function AppBar({ address, cowries, streak }: { address?: string; cowries: numbe
   const [showDisconnect, setShowDisconnect] = useState(false);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 10px", position: "relative" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
-        <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "26px", letterSpacing: "-1px", color: "#FBEFE0" }}>padi</span>
-        <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "6px", boxShadow: "0 0 8px #EF4B3C", display: "inline-block" }} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px clamp(14px,4.5vw,22px) 10px", position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
+        <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "clamp(20px,6vw,26px)", letterSpacing: "-1px", color: "#FBEFE0" }}>padi</span>
+        <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "5px", boxShadow: "0 0 8px #EF4B3C", display: "inline-block" }} />
       </div>
-      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+      <div className="appbar-inner" style={{ display: "flex", gap: "7px", alignItems: "center", flexWrap: "nowrap", minWidth: 0 }}>
         {/* Streak */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(242,169,22,.13)", border: "1px solid rgba(242,169,22,.3)", borderRadius: "999px", padding: "6px 12px" }}>
-          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#F2A916", boxShadow: "0 0 8px #F2A916", display: "inline-block" }} />
-          <span style={{ color: "#F2A916", fontWeight: 800, fontSize: "13px" }}>{streak}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(242,169,22,.13)", border: "1px solid rgba(242,169,22,.3)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
+          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#F2A916", boxShadow: "0 0 8px #F2A916", display: "inline-block" }} />
+          <span style={{ color: "#F2A916", fontWeight: 800, fontSize: "12px" }}>{streak}</span>
           <span style={{ color: "#C99A2E", fontWeight: 600, fontSize: "11px" }}>day</span>
         </div>
         {/* Cowries */}
-        <div style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.14)", borderRadius: "999px", padding: "6px 11px" }}>
-          <span style={{ width: "13px", height: "13px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", display: "inline-block", flexShrink: 0 }} />
-          <span style={{ color: "#F4D8A8", fontWeight: 800, fontSize: "13px" }}>{cowries.toLocaleString()}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.14)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
+          <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", display: "inline-block", flexShrink: 0 }} />
+          <span className="appbar-cowries-text" style={{ color: "#F4D8A8", fontWeight: 800, fontSize: "12px" }}>{cowries.toLocaleString()}</span>
         </div>
         {/* Wallet chip → tapping shows disconnect */}
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative", flexShrink: 0 }}>
           <button
             onClick={() => setShowDisconnect(v => !v)}
-            style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.18)", borderRadius: "999px", padding: "6px 11px", cursor: "pointer" }}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 6px #1FA85C", display: "inline-block" }} />
+            style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.18)", borderRadius: "999px", padding: "5px 10px", cursor: "pointer" }}>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 6px #1FA85C", display: "inline-block", flexShrink: 0 }} />
             <span style={{ color: "#A8927C", fontWeight: 600, fontSize: "11px" }}>
-              {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "Connected"}
+              {address ? `${address.slice(0, 4)}…${address.slice(-3)}` : "●●"}
             </span>
           </button>
           {/* Disconnect dropdown */}
@@ -168,7 +168,7 @@ function BottomNav({ screen, onNavigate }: { screen: Screen; onNavigate: (to: "l
     { id: "ranks", label: "Ranks", shape: { borderRadius: "3px", transform: "rotate(45deg)" } },
   ];
   return (
-    <div style={{ display: "flex", flexShrink: 0, background: "rgba(18,11,5,.94)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(247,179,43,.13)", padding: "10px 30px 16px", zIndex: 30 }}>
+    <div style={{ display: "flex", flexShrink: 0, background: "rgba(18,11,5,.94)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(247,179,43,.13)", padding: `10px clamp(20px,8vw,40px) max(16px,env(safe-area-inset-bottom,16px))`, zIndex: 30 }}>
       {tabs.map(({ id, label, shape }) => {
         const active = screen === id;
         return (
@@ -229,21 +229,21 @@ function DailyOverlay({ streak, dailyClaimed, onClaim, onClose }: { streak: numb
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(8,5,2,.78)", backdropFilter: "blur(6px)" }}>
-      <div style={{ width: "100%", background: "linear-gradient(180deg,#241509,#180e06)", borderTop: "1px solid rgba(247,179,43,.2)", borderRadius: "26px 26px 0 0", padding: "24px 22px 30px", animation: "popIn .35s ease-out" }}>
+      <div style={{ width: "100%", background: "linear-gradient(180deg,#241509,#180e06)", borderTop: "1px solid rgba(247,179,43,.2)", borderRadius: "26px 26px 0 0", padding: `24px clamp(16px,5vw,24px) max(24px,env(safe-area-inset-bottom,30px))`, animation: "popIn .35s ease-out" }}>
         <div style={{ width: "40px", height: "4px", borderRadius: "4px", background: "rgba(247,179,43,.25)", margin: "0 auto 18px" }} />
         <p style={{ margin: 0, fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "22px", color: "#FBEFE0", textAlign: "center" }}>Daily cowries</p>
         <p style={{ margin: "5px 0 18px", color: "#A8927C", fontSize: "13px", textAlign: "center" }}>Show up every day, grow your streak, stack rewards</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "6px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "clamp(4px,1.5vw,8px)" }}>
           {DAILY_REWARDS.map((rw, idx) => {
             const day = idx + 1;
             const past = day < cur;
             const today = day === cur;
             return (
-              <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 2px 8px", borderRadius: "12px", background: today ? "rgba(242,169,22,.18)" : past ? "rgba(31,168,92,.1)" : "rgba(255,238,214,.04)", border: `1px solid ${today ? "#F2A916" : past ? "rgba(31,168,92,.3)" : "rgba(255,238,214,.07)"}` }}>
-                <span style={{ fontSize: "9px", fontWeight: 800, color: today ? "#F4C95A" : past ? "#6FA582" : "#8c7866" }}>D{day}</span>
-                <span style={{ width: "15px", height: "15px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", margin: "4px 0 3px", opacity: 0.95, display: "inline-block" }} />
-                <span style={{ fontSize: "11px", fontWeight: 800, color: today ? "#FBEFE0" : past ? "#9FC2AC" : "#A8927C" }}>{rw}</span>
+              <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "clamp(6px,2vw,10px) 1px clamp(5px,1.8vw,8px)", borderRadius: "10px", background: today ? "rgba(242,169,22,.18)" : past ? "rgba(31,168,92,.1)" : "rgba(255,238,214,.04)", border: `1px solid ${today ? "#F2A916" : past ? "rgba(31,168,92,.3)" : "rgba(255,238,214,.07)"}` }}>
+                <span style={{ fontSize: "clamp(7px,2.2vw,9px)", fontWeight: 800, color: today ? "#F4C95A" : past ? "#6FA582" : "#8c7866" }}>D{day}</span>
+                <span style={{ width: "clamp(12px,3.5vw,15px)", height: "clamp(12px,3.5vw,15px)", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", margin: "3px 0 2px", opacity: 0.95, display: "inline-block" }} />
+                <span style={{ fontSize: "clamp(9px,2.8vw,11px)", fontWeight: 800, color: today ? "#FBEFE0" : past ? "#9FC2AC" : "#A8927C" }}>{rw}</span>
               </div>
             );
           })}
@@ -377,7 +377,7 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-    <div style={{ width: "100%", maxWidth: "462px", margin: "0 auto", minHeight: "100dvh", position: "relative", display: "flex", flexDirection: "column", background: "linear-gradient(180deg,#1d1208 0%,#150d06 58%,#100a05 100%)", boxShadow: "0 0 90px rgba(0,0,0,.65)", overflow: "hidden" }}>
+    <div className="app-shell">
 
       {/* Toast */}
       {toast && (
@@ -396,7 +396,7 @@ export default function Home() {
         {isApp && (
           <>
             <AppBar address={address} cowries={cowries} streak={streak} />
-            <div style={{ padding: "4px 20px 80px" }}>
+            <div style={{ padding: `4px clamp(14px,4.5vw,22px) 88px` }}>
               {screen === "lobby" && (
                 <Lobby
                   cowries={cowries}

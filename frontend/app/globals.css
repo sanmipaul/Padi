@@ -61,3 +61,37 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Responsive app shell ──────────────────────────────────────────── */
+/* Fills mobile exactly, centers at ≥ 560 px on tablet / desktop */
+.app-shell {
+  width: 100%;
+  max-width: min(560px, 100dvw);
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #1d1208 0%, #150d06 58%, #100a05 100%);
+  box-shadow: 0 0 90px rgba(0,0,0,.65);
+  overflow: hidden;
+}
+
+/* iOS notch / home-indicator safe-area helpers */
+.safe-top    { padding-top:    env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+
+/* ── Small-screen overrides (≤ 360 px wide) ─────────────────────── */
+@media (max-width: 360px) {
+  /* Shrink hero wordmark */
+  .hero-h1 { font-size: clamp(38px, 13vw, 56px) !important; letter-spacing: -2px !important; }
+
+  /* Hide cowrie text label, keep the coin icon */
+  .appbar-cowries-text { display: none !important; }
+
+  /* Tighten AppBar gap */
+  .appbar-inner { gap: 5px !important; }
+
+  /* Squeeze lobby cards slightly */
+  .prize-amount { font-size: 32px !important; }
+}
