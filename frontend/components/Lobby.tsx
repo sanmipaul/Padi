@@ -232,14 +232,20 @@ export default function Lobby({ cowries, streak, dailyClaimed, onEnterGame, onOp
       {/* Recent Games */}
       {myGames && myGames.length > 0 && (
         <div style={{ background: "rgba(255,238,214,.035)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "18px", padding: "16px" }}>
-          <p style={{ margin: "0 0 10px", color: "#A8927C", fontSize: "12px", fontWeight: 700, letterSpacing: "0.5px" }}>CONTINUE A GAME</p>
+          <p style={{ margin: "0 0 10px", color: "#A8927C", fontSize: "12px", fontWeight: 700, letterSpacing: "0.5px" }}>RECENT GAMES</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {[...myGames].reverse().slice(0, 6).map((id) => (
-              <button key={id.toString()} onClick={() => onEnterGame(id)} style={{ padding: "9px 16px", background: "rgba(255,238,214,.06)", border: "1px solid rgba(247,179,43,.14)", borderRadius: "999px", color: "#D8C4AC", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
-                Game #{id.toString()}
-              </button>
-            ))}
+            {[...myGames].reverse().slice(0, 8).map((id) => {
+              const saveKey = `padi:gs:${id.toString()}`;
+              const hasSave = typeof window !== "undefined" && !!localStorage.getItem(saveKey);
+              return (
+                <button key={id.toString()} onClick={() => onEnterGame(id)}
+                  style={{ padding: "9px 16px", background: hasSave ? "rgba(31,168,92,.12)" : "rgba(255,238,214,.06)", border: `1px solid ${hasSave ? "rgba(31,168,92,.35)" : "rgba(247,179,43,.14)"}`, borderRadius: "999px", color: hasSave ? "#8FB99B" : "#D8C4AC", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                  {hasSave ? "▶ " : ""}Game #{id.toString()}
+                </button>
+              );
+            })}
           </div>
+          <p style={{ margin: "10px 0 0", color: "#5a4a3a", fontSize: "11px" }}>▶ = in progress · tap any to view or resume</p>
         </div>
       )}
     </div>

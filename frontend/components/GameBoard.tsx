@@ -274,12 +274,54 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
   // ── Initialize local state from chain meta ──────────────────────
   useEffect(() => {
     if (!gameMeta || gs) return;
-    const [, , aiCount, , , , , w] = gameMeta as unknown as [
+    const [, chainPieces, aiCount, chainSeat, chainDice, chainRolled, chainState, w, chainWinner] = gameMeta as unknown as [
       `0x${string}`, readonly (readonly number[])[], number, number, number, boolean, number, bigint, `0x${string}`
     ];
     setWager(w);
+
+    // Game already finished on-chain — show result immediately
+    if (chainState === 1) {
+      const won = chainWinner?.toLowerCase() === address?.toLowerCase();
+      setGs({ ...createInitialState(aiCount), finished: true, playerWon: won });
+      return;
+    }
+
+    // Check localStorage for a saved mid-game session
+    const saveKey = `padi:gs:${gameId.toString()}`;
+    const raw = typeof window !== "undefined" ? localStorage.getItem(saveKey) : null;
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw);
+        setGs(saved.gs as GameState);
+        playerMoves.current = saved.moves ?? [];
+        return;
+      } catch { localStorage.removeItem(saveKey); }
+    }
+
+    // Restore from on-chain piece positions if any pieces have moved (old-arch game)
+    const chainFlat = (chainPieces as readonly (readonly number[])[]).flatMap(r => r).map(Number);
+    if (chainFlat.some(p => p > 0)) {
+      const restoredPieces = Array.from({ length: 4 }, (_, s) =>
+        Array.from({ length: 4 }, (_, p) => Number(chainPieces[s]?.[p] ?? 0))
+      ) as AllPieces;
+      setGs({ pieces: restoredPieces, aiCount, currentSeat: chainSeat, lastDice: chainDice, diceRolled: chainRolled, finished: false, playerWon: null });
+      return;
+    }
+
+    // Brand-new game — start client-side from scratch
     setGs(createInitialState(aiCount));
-  }, [gameMeta, gs]);
+  }, [gameMeta, gs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Persist mid-game state to localStorage ──────────────────────
+  useEffect(() => {
+    if (!gs) return;
+    const saveKey = `padi:gs:${gameId.toString()}`;
+    if (gs.finished) {
+      localStorage.removeItem(saveKey);
+    } else {
+      localStorage.setItem(saveKey, JSON.stringify({ gs, moves: playerMoves.current }));
+    }
+  }, [gs, gameId]);
 
   // ── Settlement triggers ─────────────────────────────────────────
   useEffect(() => {
