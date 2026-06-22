@@ -277,6 +277,7 @@ export default function Home() {
   const [gameId, setGameId] = useState<bigint | null>(null);
   const [cowries, setCowries] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [localWins, setLocalWins] = useState(0);
   const [lastReward, setLastReward] = useState(0);
   const [dailyClaimed, setDailyClaimed] = useState(false);
   const [won, setWon] = useState(false);
@@ -311,6 +312,7 @@ export default function Home() {
       const data = JSON.parse(raw);
       setCowries(data.cowries ?? 0);
       setStreak(data.streak ?? 0);
+      setLocalWins(data.localWins ?? 0);
       setDailyClaimed(data.lastClaim === new Date().toDateString());
     } catch {}
   }, [address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -322,9 +324,10 @@ export default function Home() {
     localStorage.setItem(key, JSON.stringify({
       cowries,
       streak,
+      localWins,
       lastClaim: dailyClaimed ? new Date().toDateString() : null,
     }));
-  }, [cowries, streak, dailyClaimed, address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cowries, streak, localWins, dailyClaimed, address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function showToast(text: string, color: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -352,7 +355,10 @@ export default function Home() {
     setWon(didWin);
     setLastReward(reward);
     setCowries((c) => c + reward);
-    if (didWin) setStreak((s) => s + 1);
+    if (didWin) {
+      setStreak((s) => s + 1);
+      setLocalWins((w) => w + 1);
+    }
     setOverlay(didWin ? "win" : "lose");
   }
 
@@ -401,6 +407,7 @@ export default function Home() {
                 <Lobby
                   cowries={cowries}
                   streak={streak}
+                  localWins={localWins}
                   dailyClaimed={dailyClaimed}
                   onEnterGame={handleEnterGame}
                   onOpenDaily={() => setOverlay("daily")}
@@ -417,7 +424,7 @@ export default function Home() {
                 />
               )}
               {screen === "ranks" && (
-                <Leaderboard onBack={() => setScreen("lobby")} />
+                <Leaderboard onBack={() => setScreen("lobby")} localWins={localWins} />
               )}
             </div>
           </>

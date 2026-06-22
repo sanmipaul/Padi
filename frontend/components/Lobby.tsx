@@ -12,6 +12,7 @@ const WAGER_PRESETS = ["0.10", "0.25", "1.00"];
 interface LobbyProps {
   cowries: number;
   streak: number;
+  localWins: number;
   dailyClaimed: boolean;
   onEnterGame: (id: bigint) => void;
   onOpenDaily: () => void;
@@ -19,7 +20,7 @@ interface LobbyProps {
   showToast: (text: string, color: string) => void;
 }
 
-export default function Lobby({ cowries, streak, dailyClaimed, onEnterGame, onOpenDaily, onViewRanks, showToast }: LobbyProps) {
+export default function Lobby({ cowries, streak, localWins, dailyClaimed, onEnterGame, onOpenDaily, onViewRanks, showToast }: LobbyProps) {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
 
@@ -136,9 +137,9 @@ export default function Lobby({ cowries, streak, dailyClaimed, onEnterGame, onOp
       {/* Stats Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
         {[
-          { value: winsDisplay,   label: "Wins",   color: "#EF4B3C" },
-          { value: streak,        label: "Streak", color: "#F2A916" },
-          { value: gamesDisplay,  label: "Games",  color: "#FBEFE0" },
+          { value: localWins,    label: "Wins",   color: "#EF4B3C" },
+          { value: streak,       label: "Streak", color: "#F2A916" },
+          { value: gamesDisplay, label: "Games",  color: "#FBEFE0" },
         ].map(({ value, label, color }) => (
           <div key={label} style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px 8px", textAlign: "center" }}>
             <p style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "24px", color }}>{value}</p>

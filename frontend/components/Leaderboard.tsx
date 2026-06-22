@@ -18,7 +18,7 @@ function shortAddr(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-export default function Leaderboard({ onBack }: { onBack: () => void }) {
+export default function Leaderboard({ onBack, localWins = 0 }: { onBack: () => void; localWins?: number }) {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
   const publicClient = usePublicClient();
@@ -92,12 +92,14 @@ export default function Leaderboard({ onBack }: { onBack: () => void }) {
 
   // ── Build sorted leaderboard ─────────────────────────────────────
   const entries = players
-    .map((addr, i) => ({
-      address: addr,
-      wins: winsData?.[i]?.result != null ? Number(winsData[i].result) : 0,
-      isYou: addr.toLowerCase() === address?.toLowerCase(),
-      label: addr.toLowerCase() === address?.toLowerCase() ? "You" : shortAddr(addr),
-    }))
+    .map((addr, i) => {
+      const isYou = addr.toLowerCase() === address?.toLowerCase();
+      const onChainWins = winsData?.[i]?.result != null ? Number(winsData[i].result) : 0;
+      // For the current user: take the higher of local (free+wager) vs on-chain (wager only).
+      // This way free wins count AND wager wins from other devices are never lost.
+      const wins = isYou ? Math.max(localWins, onChainWins) : onChainWins;
+      return { address: addr, wins, isYou, label: isYou ? "You" : shortAddr(addr) };
+    })
     .sort((a, b) => b.wins - a.wins || (a.isYou ? 1 : 0) - (b.isYou ? 1 : 0));
 
   const prizeDisplay = prize ? (Number(prize) / 1e18).toFixed(2) : "0.00";
@@ -141,7 +143,7 @@ export default function Leaderboard({ onBack }: { onBack: () => void }) {
         </div>
         <div style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px", textAlign: "center" }}>
           <p style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "22px", color: "#EF4B3C" }}>
-            {entries.find(e => e.isYou)?.wins ?? 0}
+            {Math.max(localWins, entries.find(e => e.isYou)?.wins ?? 0)}
           </p>
           <p style={{ margin: "2px 0 0", color: "#8c7866", fontSize: "11px", fontWeight: 600 }}>Your Wins</p>
         </div>
