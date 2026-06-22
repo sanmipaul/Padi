@@ -7,7 +7,7 @@ import { BOARD_PATH, homeStretchCoords, yardCoords } from "@/lib/ludo";
 import {
   createInitialState, performRoll, performMove, skipTurn,
   hasValidMove, isPieceMovable, isAllFinished,
-  type GameState,
+  type GameState, type AllPieces,
   FINISHED_POS,
 } from "@/lib/game-engine";
 
@@ -313,15 +313,22 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
   }, [gameMeta, gs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Persist mid-game state to localStorage ──────────────────────
+  // Saves are written synchronously inside doRoll / doMove so they
+  // are guaranteed before the user can navigate away.
+  function saveGame(state: GameState) {
+    try {
+      localStorage.setItem(
+        `padi:gs:${gameId.toString()}`,
+        JSON.stringify({ gs: state, moves: playerMoves.current }),
+      );
+    } catch {}
+  }
+
+  // Clear the save once the game finishes.
   useEffect(() => {
-    if (!gs) return;
-    const saveKey = `padi:gs:${gameId.toString()}`;
-    if (gs.finished) {
-      localStorage.removeItem(saveKey);
-    } else {
-      localStorage.setItem(saveKey, JSON.stringify({ gs, moves: playerMoves.current }));
-    }
-  }, [gs, gameId]);
+    if (!gs?.finished) return;
+    localStorage.removeItem(`padi:gs:${gameId.toString()}`);
+  }, [gs?.finished, gameId]);
 
   // ── Settlement triggers ─────────────────────────────────────────
   useEffect(() => {
@@ -413,11 +420,14 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
         setDieFace(dice);
         setRolling(false);
         if (!hasValidMove(next.pieces[0], dice)) {
-          // No valid move — show dice briefly then auto-skip
+          // No valid move — record skip, save immediately, then show dice for 900ms
+          playerMoves.current.push(255);
+          const skipped = skipTurn(next);
+          saveGame(skipped);
           setGs(next);
-          playerMoves.current.push(255); // record skip
-          setTimeout(() => setGs(prev => prev ? skipTurn(prev) : prev), 900);
+          setTimeout(() => setGs(skipped), 900);
         } else {
+          saveGame(next);
           setGs(next);
         }
       }
@@ -429,6 +439,7 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
     const { state: next, valid, captured } = performMove(gs, pieceIdx);
     if (!valid) { showToast("Can't move that piece.", "#F2A916"); return; }
     playerMoves.current.push(pieceIdx);
+    saveGame(next);
     setGs(next);
     if (captured) {
       const rand = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)] ?? "";
