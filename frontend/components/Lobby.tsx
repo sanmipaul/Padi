@@ -47,17 +47,6 @@ export default function Lobby({ cowries, streak, dailyClaimed, onEnterGame, onOp
   const winsDisplay   = wins             ? Number(wins)             : 0;
   const gamesDisplay  = myGames          ? myGames.length           : 0;
 
-  // Compute time until next Monday 00:00 UTC (weekly reset)
-  const resetText = (() => {
-    const now = new Date();
-    const day = now.getUTCDay(); // 0=Sun
-    const daysLeft = day === 1 ? 7 : (8 - day) % 7;
-    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysLeft));
-    const ms = next.getTime() - now.getTime();
-    const d = Math.floor(ms / 86400000);
-    const h = Math.floor((ms % 86400000) / 3600000);
-    return `${d}d ${h}h`;
-  })();
 
   // Show error toasts so the user always knows what went wrong
   useEffect(() => {
@@ -124,10 +113,6 @@ export default function Lobby({ cowries, streak, dailyClaimed, onEnterGame, onOp
         <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "6px 0 0", position: "relative" }}>
           <span style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "42px", color: "#F4C95A", textShadow: "0 0 24px rgba(242,169,22,.35)", lineHeight: 1 }}>{prizeDisplay}</span>
           <span style={{ color: "#C99A2E", fontWeight: 700, fontSize: "15px" }}>USDM</span>
-        </div>
-        <div style={{ display: "flex", gap: "14px", marginTop: "10px" }}>
-          <span style={{ color: "#A8927C", fontSize: "12px" }}>Resets in <span style={{ color: "#FBEFE0", fontWeight: 600 }}>{resetText}</span></span>
-          <span style={{ color: "#A8927C", fontSize: "12px" }}>Top prize <span style={{ color: "#FBEFE0", fontWeight: 600 }}>60%</span></span>
         </div>
         <button onClick={onViewRanks} style={{ marginTop: "14px", background: "rgba(242,169,22,.16)", border: "1px solid rgba(242,169,22,.34)", color: "#F4C95A", fontWeight: 700, fontSize: "13px", borderRadius: "999px", padding: "9px 16px", cursor: "pointer" }}>
           View leaderboard →
