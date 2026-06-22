@@ -105,7 +105,7 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
 }
 
 /* ─── App Bar ─────────────────────────────────────────────────────── */
-function AppBar({ address, cowries, streak }: { address?: string; cowries: number; streak: number }) {
+function AppBar({ address, cowries, streak, onDisconnect }: { address?: string; cowries: number; streak: number; onDisconnect: () => void }) {
   const { disconnect } = useDisconnect();
   const [showDisconnect, setShowDisconnect] = useState(false);
 
@@ -147,7 +147,7 @@ function AppBar({ address, cowries, streak }: { address?: string; cowries: numbe
                 </div>
               )}
               <button
-                onClick={() => { disconnect(); setShowDisconnect(false); }}
+                onClick={() => { disconnect(); setShowDisconnect(false); onDisconnect(); }}
                 style={{ width: "100%", display: "flex", alignItems: "center", gap: "9px", padding: "10px 12px", borderRadius: "10px", background: "rgba(239,75,60,.1)", border: "1px solid rgba(239,75,60,.2)", color: "#EF4B3C", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Disconnect Wallet
@@ -302,6 +302,15 @@ export default function Home() {
     if (isConnected && screen === "onboarding") setScreen("lobby");
   }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Navigate back to landing when wallet disconnects (button or external)
+  useEffect(() => {
+    if (!isConnected && mounted && screen !== "onboarding") {
+      setScreen("onboarding");
+      setGameId(null);
+      setOverlay(null);
+    }
+  }, [isConnected, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Load per-wallet data from localStorage once address is known
   useEffect(() => {
     if (!address || !mounted) return;
@@ -401,7 +410,7 @@ export default function Home() {
 
         {isApp && (
           <>
-            <AppBar address={address} cowries={cowries} streak={streak} />
+            <AppBar address={address} cowries={cowries} streak={streak} onDisconnect={() => { setScreen("onboarding"); setGameId(null); setOverlay(null); }} />
             <div style={{ padding: `4px clamp(14px,4.5vw,22px) 88px` }}>
               {screen === "lobby" && (
                 <Lobby
