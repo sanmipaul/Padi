@@ -275,9 +275,8 @@ export default function Home() {
   const [screen, setScreen] = useState<Screen>("onboarding");
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [gameId, setGameId] = useState<bigint | null>(null);
-  const [cowries, setCowries] = useState(1240);
-  const [streak, setStreak] = useState(3);
-  const [gamesPlayed, setGamesPlayed] = useState(0);
+  const [cowries, setCowries] = useState(0);
+  const [streak, setStreak] = useState(0);
   const [lastReward, setLastReward] = useState(0);
   const [dailyClaimed, setDailyClaimed] = useState(false);
   const [won, setWon] = useState(false);
@@ -301,6 +300,31 @@ export default function Home() {
   useEffect(() => {
     if (isConnected && screen === "onboarding") setScreen("lobby");
   }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load per-wallet data from localStorage once address is known
+  useEffect(() => {
+    if (!address || !mounted) return;
+    const key = `padi:${address.toLowerCase()}`;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      setCowries(data.cowries ?? 0);
+      setStreak(data.streak ?? 0);
+      setDailyClaimed(data.lastClaim === new Date().toDateString());
+    } catch {}
+  }, [address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist cowries / streak / daily claim whenever they change
+  useEffect(() => {
+    if (!address || !mounted) return;
+    const key = `padi:${address.toLowerCase()}`;
+    localStorage.setItem(key, JSON.stringify({
+      cowries,
+      streak,
+      lastClaim: dailyClaimed ? new Date().toDateString() : null,
+    }));
+  }, [cowries, streak, dailyClaimed, address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function showToast(text: string, color: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -329,7 +353,6 @@ export default function Home() {
     setLastReward(reward);
     setCowries((c) => c + reward);
     if (didWin) setStreak((s) => s + 1);
-    setGamesPlayed((g) => g + 1);
     setOverlay(didWin ? "win" : "lose");
   }
 
@@ -379,7 +402,6 @@ export default function Home() {
                   cowries={cowries}
                   streak={streak}
                   dailyClaimed={dailyClaimed}
-                  gamesPlayed={gamesPlayed}
                   onEnterGame={handleEnterGame}
                   onOpenDaily={() => setOverlay("daily")}
                   onViewRanks={() => setScreen("ranks")}

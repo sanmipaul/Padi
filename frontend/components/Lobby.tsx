@@ -13,14 +13,13 @@ interface LobbyProps {
   cowries: number;
   streak: number;
   dailyClaimed: boolean;
-  gamesPlayed: number;
   onEnterGame: (id: bigint) => void;
   onOpenDaily: () => void;
   onViewRanks: () => void;
   showToast: (text: string, color: string) => void;
 }
 
-export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEnterGame, onOpenDaily, onViewRanks, showToast }: LobbyProps) {
+export default function Lobby({ cowries, streak, dailyClaimed, onEnterGame, onOpenDaily, onViewRanks, showToast }: LobbyProps) {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
 
@@ -44,9 +43,21 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
 
   const busy = approveSubmitting || approveWaiting || createSubmitting || createWaiting;
 
-  const prizeDisplay = prizePool ? (Number(prizePool) / 1e18).toFixed(1) : "0.0";
-  const winsDisplay  = wins            ? Number(wins)            : 0;
-  const totalDisplay = totalGamesCount ? Number(totalGamesCount) : 0;
+  const prizeDisplay  = prizePool        ? (Number(prizePool) / 1e18).toFixed(2) : "0.00";
+  const winsDisplay   = wins             ? Number(wins)             : 0;
+  const gamesDisplay  = myGames          ? myGames.length           : 0;
+
+  // Compute time until next Monday 00:00 UTC (weekly reset)
+  const resetText = (() => {
+    const now = new Date();
+    const day = now.getUTCDay(); // 0=Sun
+    const daysLeft = day === 1 ? 7 : (8 - day) % 7;
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysLeft));
+    const ms = next.getTime() - now.getTime();
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    return `${d}d ${h}h`;
+  })();
 
   // Show error toasts so the user always knows what went wrong
   useEffect(() => {
@@ -115,7 +126,7 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
           <span style={{ color: "#C99A2E", fontWeight: 700, fontSize: "15px" }}>USDM</span>
         </div>
         <div style={{ display: "flex", gap: "14px", marginTop: "10px" }}>
-          <span style={{ color: "#A8927C", fontSize: "12px" }}>Resets in <span style={{ color: "#FBEFE0", fontWeight: 600 }}>3d 14h</span></span>
+          <span style={{ color: "#A8927C", fontSize: "12px" }}>Resets in <span style={{ color: "#FBEFE0", fontWeight: 600 }}>{resetText}</span></span>
           <span style={{ color: "#A8927C", fontSize: "12px" }}>Top prize <span style={{ color: "#FBEFE0", fontWeight: 600 }}>60%</span></span>
         </div>
         <button onClick={onViewRanks} style={{ marginTop: "14px", background: "rgba(242,169,22,.16)", border: "1px solid rgba(242,169,22,.34)", color: "#F4C95A", fontWeight: 700, fontSize: "13px", borderRadius: "999px", padding: "9px 16px", cursor: "pointer" }}>
@@ -140,9 +151,9 @@ export default function Lobby({ cowries, streak, dailyClaimed, gamesPlayed, onEn
       {/* Stats Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
         {[
-          { value: winsDisplay,                   label: "Wins",   color: "#EF4B3C" },
-          { value: streak,                         label: "Streak", color: "#F2A916" },
-          { value: totalDisplay || gamesPlayed,    label: "Games",  color: "#FBEFE0" },
+          { value: winsDisplay,   label: "Wins",   color: "#EF4B3C" },
+          { value: streak,        label: "Streak", color: "#F2A916" },
+          { value: gamesDisplay,  label: "Games",  color: "#FBEFE0" },
         ].map(({ value, label, color }) => (
           <div key={label} style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px 8px", textAlign: "center" }}>
             <p style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "24px", color }}>{value}</p>
