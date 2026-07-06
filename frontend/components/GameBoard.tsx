@@ -538,12 +538,19 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
       </motion.div>
 
       {/* Piece picker */}
-      {canMoveNow && (
-        <div>
-          <p style={{ margin: "0 0 8px", color: "#8c7866", fontSize: "12px", fontWeight: 600 }}>Tap a glowing piece — on the board or below</p>
-          <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} onMove={doMove} />
-        </div>
-      )}
+      <AnimatePresence>
+        {canMoveNow && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+          >
+            <p style={{ margin: "0 0 8px", color: "#8c7866", fontSize: "12px", fontWeight: 600 }}>Tap a glowing piece — on the board or below</p>
+            <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} onMove={doMove} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Game over card */}
       {gs.finished && (
