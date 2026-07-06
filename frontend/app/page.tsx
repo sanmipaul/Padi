@@ -47,19 +47,19 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
       {/* Hero */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "30px 28px 0", textAlign: "center", position: "relative", gap: "8px" }}>
         {/* Colour circles — visual hint of Ludo pieces */}
-        <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+        <motion.div {...fadeIn} transition={{ duration: 0.5 }} style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
           {["#EF4B3C","#1FA85C","#3D6BFF","#F2A916"].map((c, i) => (
             <div key={i} style={{ width: "18px", height: "18px", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.7),${c} 65%)`, boxShadow: `0 0 12px ${c}88`, animation: `floaty ${2.6 + i * 0.4}s ease-in-out ${i * 0.3}s infinite` }} />
           ))}
-        </div>
+        </motion.div>
 
-        <h1 className="hero-h1" style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "clamp(46px,15vw,72px)", lineHeight: 0.9, letterSpacing: "clamp(-2px,-0.05em,-3px)", color: "#FBEFE0", margin: 0 }}>
+        <motion.h1 className="hero-h1" {...fadeUp} transition={{ duration: 0.55, ease: "easeOut" }} style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "clamp(46px,15vw,72px)", lineHeight: 0.9, letterSpacing: "clamp(-2px,-0.05em,-3px)", color: "#FBEFE0", margin: 0 }}>
           padi
-        </h1>
-        <p style={{ color: "#F2A916", fontWeight: 700, fontSize: "clamp(12px,3.5vw,14px)", letterSpacing: "2.5px", textTransform: "uppercase", margin: "10px 0 0" }}>On-chain Ludo on Celo</p>
-        <p style={{ color: "#A8927C", fontSize: "clamp(13px,3.8vw,15px)", lineHeight: 1.6, maxWidth: "min(290px, 85vw)", margin: "12px 0 0" }}>
+        </motion.h1>
+        <motion.p {...fadeUp} transition={{ duration: 0.5, delay: 0.12, ease: "easeOut" }} style={{ color: "#F2A916", fontWeight: 700, fontSize: "clamp(12px,3.5vw,14px)", letterSpacing: "2.5px", textTransform: "uppercase", margin: "10px 0 0" }}>On-chain Ludo on Celo</motion.p>
+        <motion.p {...fadeUp} transition={{ duration: 0.5, delay: 0.22, ease: "easeOut" }} style={{ color: "#A8927C", fontSize: "clamp(13px,3.8vw,15px)", lineHeight: 1.6, maxWidth: "min(290px, 85vw)", margin: "12px 0 0" }}>
           Roll the dice. Chase your AI <span style={{ color: "#FBEFE0", fontWeight: 600 }}>padis</span> off the board. Win real USDM — zero signatures during play.
-        </p>
+        </motion.p>
       </div>
 
       {/* Feature cards */}
