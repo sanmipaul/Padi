@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
 import Leaderboard from "@/components/Leaderboard";
+
+const fadeUp   = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
+const fadeIn   = { initial: { opacity: 0 },         animate: { opacity: 1 } };
+const scaleIn  = { initial: { opacity: 0, scale: 0.88 }, animate: { opacity: 1, scale: 1 } };
+const slideLeft = { initial: { opacity: 0, x: -16 }, animate: { opacity: 1, x: 0 } };
 
 type Screen = "onboarding" | "lobby" | "game" | "ranks";
 type Overlay = null | "win" | "lose" | "daily";
