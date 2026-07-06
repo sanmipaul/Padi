@@ -69,13 +69,13 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
           { dot: "#F2A916", title: "Wager USDM, win 99%", sub: "One signature to start, one to settle. That's it." },
           { dot: "#1FA85C", title: "Daily streaks & prize pool", sub: "Show up every day, stack cowries & climb the ranks" },
         ].map((f, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "14px", padding: "12px 14px" }}>
+          <motion.div key={i} {...fadeUp} transition={{ duration: 0.4, delay: 0.32 + i * 0.09, ease: "easeOut" }} style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "14px", padding: "12px 14px" }}>
             <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: f.dot, boxShadow: `0 0 8px ${f.dot}`, flexShrink: 0 }} />
             <div>
               <p style={{ margin: 0, fontWeight: 700, fontSize: "14px", color: "#FBEFE0" }}>{f.title}</p>
               <p style={{ margin: "2px 0 0", color: "#7d6a58", fontSize: "12px" }}>{f.sub}</p>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
