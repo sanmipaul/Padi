@@ -179,10 +179,10 @@ function BottomNav({ screen, onNavigate }: { screen: Screen; onNavigate: (to: "l
       {tabs.map(({ id, label, shape }) => {
         const active = screen === id;
         return (
-          <button key={id} onClick={() => onNavigate(id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
-            <div style={{ width: "20px", height: "20px", border: `2.5px solid ${active ? "#EF4B3C" : "#8c7866"}`, ...shape }} />
-            <span style={{ fontSize: "10px", fontWeight: 700, color: active ? "#EF4B3C" : "#8c7866" }}>{label}</span>
-          </button>
+          <motion.button key={id} onClick={() => onNavigate(id)} whileHover={{ y: -2 }} whileTap={{ scale: 0.88 }} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
+            <motion.div animate={{ borderColor: active ? "#EF4B3C" : "#8c7866", scale: active ? 1.1 : 1 }} transition={{ duration: 0.22 }} style={{ width: "20px", height: "20px", border: `2.5px solid ${active ? "#EF4B3C" : "#8c7866"}`, ...shape }} />
+            <motion.span animate={{ color: active ? "#EF4B3C" : "#8c7866" }} transition={{ duration: 0.22 }} style={{ fontSize: "10px", fontWeight: 700 }}>{label}</motion.span>
+          </motion.button>
         );
       })}
     </div>
