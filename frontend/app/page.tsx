@@ -411,36 +411,48 @@ export default function Home() {
 
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: "auto" }} className="no-scrollbar">
-        {screen === "onboarding" && (
-          <LandingPage onConnect={handleConnect} isConnecting={isConnecting} isMiniPay={isMiniPay} />
-        )}
+        <AnimatePresence mode="wait">
+          {screen === "onboarding" && (
+            <motion.div key="onboarding" {...fadeIn} transition={{ duration: 0.3 }}>
+              <LandingPage onConnect={handleConnect} isConnecting={isConnecting} isMiniPay={isMiniPay} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {isApp && (
           <>
             <AppBar address={address} cowries={cowries} streak={streak} onDisconnect={() => { setScreen("onboarding"); setGameId(null); setOverlay(null); }} />
             <div style={{ padding: `4px clamp(14px,4.5vw,22px) 88px` }}>
-              {screen === "lobby" && (
-                <Lobby
-                  cowries={cowries}
-                  streak={streak}
-                  localWins={localWins}
-                  dailyClaimed={dailyClaimed}
-                  onEnterGame={handleEnterGame}
-                  onOpenDaily={() => setOverlay("daily")}
-                  onViewRanks={() => setScreen("ranks")}
-                  showToast={showToast}
-                />
-              )}
-              {screen === "game" && gameId !== null && (
-                <GameBoard
-                  gameId={gameId}
-                  onBack={handleBack}
-                  onGameEnd={handleGameEnd}
-                  showToast={showToast}
-                />
-              )}
+              <AnimatePresence mode="wait">
+                {screen === "lobby" && (
+                  <motion.div key="lobby" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28 }}>
+                    <Lobby
+                      cowries={cowries}
+                      streak={streak}
+                      localWins={localWins}
+                      dailyClaimed={dailyClaimed}
+                      onEnterGame={handleEnterGame}
+                      onOpenDaily={() => setOverlay("daily")}
+                      onViewRanks={() => setScreen("ranks")}
+                      showToast={showToast}
+                    />
+                  </motion.div>
+                )}
+                {screen === "game" && gameId !== null && (
+                  <motion.div key="game" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                    <GameBoard
+                      gameId={gameId}
+                      onBack={handleBack}
+                      onGameEnd={handleGameEnd}
+                      showToast={showToast}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
               {screen === "ranks" && (
-                <Leaderboard onBack={() => setScreen("lobby")} localWins={localWins} />
+                <motion.div key="ranks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
+                  <Leaderboard onBack={() => setScreen("lobby")} localWins={localWins} />
+                </motion.div>
               )}
             </div>
           </>
