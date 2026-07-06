@@ -175,7 +175,13 @@ export default function Leaderboard({ onBack, localWins = 0 }: { onBack: () => v
           entries.map((p, idx) => {
             const top = idx < 3;
             return (
-              <div key={p.address} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", borderRadius: "14px", background: p.isYou ? "rgba(239,75,60,.12)" : "rgba(255,238,214,.035)", border: `1px solid ${p.isYou ? "rgba(239,75,60,.4)" : "rgba(247,179,43,.08)"}` }}>
+              <motion.div
+                key={p.address}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.055, ease: "easeOut" }}
+                style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 14px", borderRadius: "14px", background: p.isYou ? "rgba(239,75,60,.12)" : "rgba(255,238,214,.035)", border: `1px solid ${p.isYou ? "rgba(239,75,60,.4)" : "rgba(247,179,43,.08)"}` }}
+              >
                 <span style={{ width: "24px", textAlign: "center", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "16px", color: top ? MEDAL_COLORS[idx] : "#8c7866" }}>{idx + 1}</span>
                 <span style={{ width: "34px", height: "34px", borderRadius: "50%", background: p.isYou ? "#EF4B3C" : "rgba(255,238,214,.1)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: "13px", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", flexShrink: 0 }}>
                   {p.label[0].toUpperCase()}
@@ -186,7 +192,7 @@ export default function Leaderboard({ onBack, localWins = 0 }: { onBack: () => v
                 <span style={{ fontWeight: 700, fontSize: "13px", color: p.isYou ? "#EF8C7E" : "#A8927C" }}>
                   {p.wins} win{p.wins !== 1 ? "s" : ""}
                 </span>
-              </div>
+              </motion.div>
             );
           })
         )}
