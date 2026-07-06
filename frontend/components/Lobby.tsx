@@ -112,17 +112,17 @@ export default function Lobby({ cowries, streak, localWins, dailyClaimed, onEnte
     <div style={{ display: "flex", flexDirection: "column", gap: "13px" }}>
 
       {/* Prize Pool Banner */}
-      <div style={{ borderRadius: "22px", padding: "20px", position: "relative", overflow: "hidden", background: "linear-gradient(135deg,#3a2012,#221107)", border: "1px solid rgba(242,169,22,.24)" }}>
+      <motion.div {...fadeUp} transition={{ duration: 0.45, ease: "easeOut" }} style={{ borderRadius: "22px", padding: "20px", position: "relative", overflow: "hidden", background: "linear-gradient(135deg,#3a2012,#221107)", border: "1px solid rgba(242,169,22,.24)" }}>
         <div style={{ position: "absolute", right: "-30px", top: "-30px", width: "150px", height: "150px", background: "repeating-conic-gradient(from 0deg,#F2A916 0 11deg,transparent 11deg 22deg)", opacity: 0.1, borderRadius: "50%" }} />
         <p style={{ margin: 0, color: "#C99A2E", fontSize: "11px", fontWeight: 800, letterSpacing: "1.5px" }}>WEEKLY PRIZE POOL</p>
         <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "6px 0 0", position: "relative" }}>
-          <span className="prize-amount" style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "clamp(32px,10vw,42px)", color: "#F4C95A", textShadow: "0 0 24px rgba(242,169,22,.35)", lineHeight: 1 }}>{prizeDisplay}</span>
+          <span className="prize-amount" style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "clamp(32px,10vw,42px)", color: "#F4C95A", lineHeight: 1, animation: "prizeGlow 2.8s ease-in-out infinite" }}>{prizeDisplay}</span>
           <span style={{ color: "#C99A2E", fontWeight: 700, fontSize: "15px" }}>USDM</span>
         </div>
-        <button onClick={onViewRanks} style={{ marginTop: "14px", background: "rgba(242,169,22,.16)", border: "1px solid rgba(242,169,22,.34)", color: "#F4C95A", fontWeight: 700, fontSize: "13px", borderRadius: "999px", padding: "9px 16px", cursor: "pointer" }}>
+        <motion.button whileTap={{ scale: 0.96 }} onClick={onViewRanks} style={{ marginTop: "14px", background: "rgba(242,169,22,.16)", border: "1px solid rgba(242,169,22,.34)", color: "#F4C95A", fontWeight: 700, fontSize: "13px", borderRadius: "999px", padding: "9px 16px", cursor: "pointer" }}>
           View leaderboard →
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {/* Daily Cowries Button */}
       <button onClick={onOpenDaily} style={{ display: "flex", alignItems: "center", gap: "13px", textAlign: "left", cursor: "pointer", background: dailyClaimed ? "rgba(255,238,214,.03)" : "rgba(31,168,92,.11)", border: `1px solid ${dailyClaimed ? "rgba(255,238,214,.08)" : "rgba(31,168,92,.3)"}`, borderRadius: "18px", padding: "13px 15px" }}>
