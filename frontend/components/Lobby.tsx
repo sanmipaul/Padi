@@ -153,7 +153,7 @@ export default function Lobby({ cowries, streak, localWins, dailyClaimed, onEnte
       </div>
 
       {/* New Game Card */}
-      <div style={{ background: "rgba(255,238,214,.035)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "22px", padding: "18px" }}>
+      <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.18, ease: "easeOut" }} style={{ background: "rgba(255,238,214,.035)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "22px", padding: "18px" }}>
         <p style={{ margin: "0 0 3px", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "19px", color: "#FBEFE0" }}>New game</p>
         <p style={{ margin: "0 0 14px", color: "#A8927C", fontSize: "13px" }}>How many padis are you taking on?</p>
 
@@ -207,31 +207,39 @@ export default function Lobby({ cowries, streak, localWins, dailyClaimed, onEnte
         )}
 
         {/* Start button */}
-        <button
+        <motion.button
           onClick={handleCreate}
           disabled={busy}
+          whileTap={busy ? {} : { scale: 0.97 }}
           style={{ width: "100%", marginTop: "16px", padding: "16px", border: "none", borderRadius: "16px", background: busy ? "rgba(239,75,60,.45)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "17px", cursor: busy ? "default" : "pointer", boxShadow: busy ? "none" : "0 12px 26px -10px rgba(239,75,60,.7)", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}
         >
           {busy && (
             <span style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block", flexShrink: 0 }} />
           )}
           {btnLabel}
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {/* Recent Games */}
       {myGames && myGames.length > 0 && (
         <div style={{ background: "rgba(255,238,214,.035)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "18px", padding: "16px" }}>
           <p style={{ margin: "0 0 10px", color: "#A8927C", fontSize: "12px", fontWeight: 700, letterSpacing: "0.5px" }}>RECENT GAMES</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {[...myGames].reverse().slice(0, 8).map((id) => {
+            {[...myGames].reverse().slice(0, 8).map((id, i) => {
               const saveKey = `padi:gs:${id.toString()}`;
               const hasSave = typeof window !== "undefined" && !!localStorage.getItem(saveKey);
               return (
-                <button key={id.toString()} onClick={() => onEnterGame(id)}
+                <motion.button
+                  key={id.toString()}
+                  onClick={() => onEnterGame(id)}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.07, ease: "easeOut" }}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.95 }}
                   style={{ padding: "9px 16px", background: hasSave ? "rgba(31,168,92,.12)" : "rgba(255,238,214,.06)", border: `1px solid ${hasSave ? "rgba(31,168,92,.35)" : "rgba(247,179,43,.14)"}`, borderRadius: "999px", color: hasSave ? "#8FB99B" : "#D8C4AC", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
                   {hasSave ? "▶ " : ""}Game #{id.toString()}
-                </button>
+                </motion.button>
               );
             })}
           </div>
