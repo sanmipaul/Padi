@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { PADI_ADDRESS, PADI_ABI } from "@/lib/contracts";
 import { BOARD_PATH, homeStretchCoords, yardCoords } from "@/lib/ludo";
@@ -485,7 +486,13 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
       )}
 
       {/* Board */}
-      <Board pieces={gs.pieces} totalSeats={totalSeats} canMove={canMoveNow} dice={gs.lastDice} onMove={doMove} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Board pieces={gs.pieces} totalSeats={totalSeats} canMove={canMoveNow} dice={gs.lastDice} onMove={doMove} />
+      </motion.div>
 
       {/* Dice + status row */}
       <div style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "18px", padding: "13px 15px" }}>
