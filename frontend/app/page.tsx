@@ -80,16 +80,17 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
       </div>
 
       {/* CTA */}
-      <div style={{ padding: "24px clamp(16px,5vw,28px) max(28px,env(safe-area-inset-bottom,36px))", position: "relative" }}>
+      <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.58, ease: "easeOut" }} style={{ padding: "24px clamp(16px,5vw,28px) max(28px,env(safe-area-inset-bottom,36px))", position: "relative" }}>
         {isMiniPay ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "9px", padding: "16px", background: "rgba(31,168,92,.12)", border: "1px solid rgba(31,168,92,.3)", borderRadius: "18px" }}>
             <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 9px #1FA85C", display: "inline-block", animation: "floaty 2s ease-in-out infinite" }} />
             <span style={{ color: "#8FB99B", fontWeight: 700, fontSize: "15px" }}>Connecting MiniPay…</span>
           </div>
         ) : (
-          <button
+          <motion.button
             onClick={onConnect}
             disabled={isConnecting}
+            whileTap={isConnecting ? {} : { scale: 0.97 }}
             style={{ width: "100%", padding: "18px", border: "none", borderRadius: "18px", background: isConnecting ? "rgba(239,75,60,.45)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "18px", letterSpacing: ".3px", cursor: isConnecting ? "default" : "pointer", animation: isConnecting ? "none" : "glowPulse 2.8s ease-in-out infinite", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", boxShadow: "0 18px 40px -14px rgba(239,75,60,.6)" }}>
             {isConnecting ? (
               <>
@@ -102,10 +103,10 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
                 Connect Wallet
               </>
             )}
-          </button>
+          </motion.button>
         )}
         <p style={{ textAlign: "center", color: "#5a4a3a", fontSize: "11px", margin: "12px 0 0" }}>Free to play · Optional USDM wagers · Fully on-chain</p>
-      </div>
+      </motion.div>
     </div>
   );
 }
