@@ -124,16 +124,16 @@ function AppBar({ address, cowries, streak, onDisconnect }: { address?: string; 
       </div>
       <div className="appbar-inner" style={{ display: "flex", gap: "7px", alignItems: "center", flexWrap: "nowrap", minWidth: 0 }}>
         {/* Streak */}
-        <div style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(242,169,22,.13)", border: "1px solid rgba(242,169,22,.3)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
+        <motion.div whileHover={{ y: -1 }} style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(242,169,22,.13)", border: "1px solid rgba(242,169,22,.3)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
           <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#F2A916", boxShadow: "0 0 8px #F2A916", display: "inline-block", animation: "goldDot 3s ease-in-out infinite" }} />
           <span style={{ color: "#F2A916", fontWeight: 800, fontSize: "12px" }}>{streak}</span>
           <span style={{ color: "#C99A2E", fontWeight: 600, fontSize: "11px" }}>day</span>
-        </div>
+        </motion.div>
         {/* Cowries */}
-        <div style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.14)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
+        <motion.div whileHover={{ y: -1 }} style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.14)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
           <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", display: "inline-block", flexShrink: 0 }} />
           <span className="appbar-cowries-text" style={{ color: "#F4D8A8", fontWeight: 800, fontSize: "12px" }}>{cowries.toLocaleString()}</span>
-        </div>
+        </motion.div>
         {/* Wallet chip → tapping shows disconnect */}
         <div style={{ position: "relative", flexShrink: 0 }}>
           <button
