@@ -193,7 +193,13 @@ function SeatsRow({ pieces, totalSeats, currentSeat, finished }: {
           ? [onBoard > 0 ? `${onBoard} active` : "", atHome > 0 ? `${atHome} home` : ""].filter(Boolean).join(" · ")
           : `${inYard} in yard`;
         return (
-          <div key={s} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 13px 7px 7px", borderRadius: "999px", background: active ? alpha(COLORS[s], 0.17) : "rgba(255,238,214,.04)", border: `1px solid ${active ? COLORS[s] : "rgba(255,238,214,.08)"}` }}>
+          <motion.div
+            key={s}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.32, delay: s * 0.08, ease: [0.22, 1, 0.36, 1] }}
+            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 13px 7px 7px", borderRadius: "999px", background: active ? alpha(COLORS[s], 0.17) : "rgba(255,238,214,.04)", border: `1px solid ${active ? COLORS[s] : "rgba(255,238,214,.08)"}` }}
+          >
             <div style={{ width: "27px", height: "27px", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.65),${COLORS[s]} 62%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", boxShadow: active ? `0 0 11px ${COLORS[s]}` : "none" }}>
               {NAMES[s][0]}
             </div>
@@ -201,7 +207,7 @@ function SeatsRow({ pieces, totalSeats, currentSeat, finished }: {
               <span style={{ display: "block", fontSize: "12px", fontWeight: 700, color: active ? "#FBEFE0" : "#A8927C" }}>{NAMES[s]}</span>
               <span style={{ display: "block", fontSize: "10px", color: atHome === 4 ? "#1FA85C" : onBoard > 0 ? "#F2A916" : "#7d6a58" }}>{subLabel}</span>
             </div>
-          </div>
+          </motion.div>
         );
       })}
     </div>
