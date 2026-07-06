@@ -509,7 +509,12 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
       </motion.div>
 
       {/* Dice + status row */}
-      <div style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "18px", padding: "13px 15px" }}>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.38, delay: 0.1, ease: "easeOut" }}
+        style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "18px", padding: "13px 15px" }}
+      >
         <Die face={displayFace} rolling={rolling} />
         <div style={{ flex: 1 }}>
           <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#FBEFE0", lineHeight: 1.3 }}>{statusText}</p>
@@ -518,15 +523,19 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
           )}
         </div>
         {canRollNow ? (
-          <button onClick={doRoll} style={{ padding: "14px 22px", border: "none", borderRadius: "14px", background: "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "16px", cursor: "pointer", boxShadow: "0 10px 22px -8px rgba(239,75,60,.8)", animation: "glowPulse 1.8s infinite" }}>
+          <motion.button
+            onClick={doRoll}
+            whileTap={{ scale: 0.93 }}
+            style={{ padding: "14px 22px", border: "none", borderRadius: "14px", background: "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "16px", cursor: "pointer", boxShadow: "0 10px 22px -8px rgba(239,75,60,.8)", animation: "glowPulse 1.8s infinite" }}
+          >
             Roll
-          </button>
+          </motion.button>
         ) : (
           <div style={{ padding: "14px 18px", borderRadius: "14px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.1)", color: "#7d6a58", fontWeight: 700, fontSize: "13px" }}>
             {rolling ? "…" : canMoveNow ? "Pick" : settling ? "⏳" : "Wait"}
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Piece picker */}
       {canMoveNow && (
