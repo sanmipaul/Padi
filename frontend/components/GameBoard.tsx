@@ -553,8 +553,14 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
       </AnimatePresence>
 
       {/* Game over card */}
+      <AnimatePresence>
       {gs.finished && (
-        <div style={{ borderRadius: "20px", padding: "20px", textAlign: "center", background: gs.playerWon ? "rgba(31,168,92,.12)" : "rgba(239,75,60,.1)", border: `1px solid ${gs.playerWon ? "rgba(31,168,92,.4)" : "rgba(239,75,60,.3)"}` }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          style={{ borderRadius: "20px", padding: "20px", textAlign: "center", background: gs.playerWon ? "rgba(31,168,92,.12)" : "rgba(239,75,60,.1)", border: `1px solid ${gs.playerWon ? "rgba(31,168,92,.4)" : "rgba(239,75,60,.3)"}` }}
+        >
           {settling ? (
             <>
               <p style={{ margin: "0 0 6px", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "20px", color: "#F4C95A" }}>
@@ -574,8 +580,9 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
               </button>
             </>
           ) : null}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
