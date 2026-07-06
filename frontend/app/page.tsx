@@ -204,27 +204,27 @@ function WinOverlay({ won, lastReward, onPlayAgain, onClose }: { won: boolean; l
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(8,5,2,.8)", backdropFilter: "blur(7px)", padding: "24px" }}>
       {won && <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>{confetti}</div>}
-      <div style={{ position: "relative", width: "100%", maxWidth: "370px", background: "linear-gradient(180deg,#2a1a10,#1a0f07)", border: "1px solid rgba(247,179,43,.2)", borderRadius: "26px", padding: "32px 24px 24px", textAlign: "center", animation: "popIn .42s cubic-bezier(.2,1.3,.4,1)", boxShadow: "0 30px 70px -20px #000" }}>
-        <div style={{ width: "64px", height: "64px", margin: "0 auto 14px", borderRadius: "50%", background: won ? "rgba(31,168,92,.2)" : "rgba(239,75,60,.16)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "30px" }}>
+      <motion.div initial={{ opacity: 0, scale: 0.82 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }} style={{ position: "relative", width: "100%", maxWidth: "370px", background: "linear-gradient(180deg,#2a1a10,#1a0f07)", border: "1px solid rgba(247,179,43,.2)", borderRadius: "26px", padding: "32px 24px 24px", textAlign: "center", boxShadow: "0 30px 70px -20px #000" }}>
+        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }} style={{ width: "64px", height: "64px", margin: "0 auto 14px", borderRadius: "50%", background: won ? "rgba(31,168,92,.2)" : "rgba(239,75,60,.16)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "30px" }}>
           {won ? "★" : "↺"}
-        </div>
-        <div style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "32px", color: won ? "#5BD08A" : "#EF4B3C", lineHeight: 1 }}>
+        </motion.div>
+        <motion.div {...fadeUp} transition={{ delay: 0.22, duration: 0.35 }} style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "32px", color: won ? "#5BD08A" : "#EF4B3C", lineHeight: 1 }}>
           {won ? "You win!" : "Padi wins"}
-        </div>
-        <p style={{ margin: "10px auto 0", color: "#C9B49C", fontSize: "14px", maxWidth: "260px", lineHeight: 1.5 }}>
+        </motion.div>
+        <motion.p {...fadeUp} transition={{ delay: 0.3, duration: 0.35 }} style={{ margin: "10px auto 0", color: "#C9B49C", fontSize: "14px", maxWidth: "260px", lineHeight: 1.5 }}>
           {won ? "You walked your last piece home. Cowries incoming!" : "Tough one — your padi reached home first. Run it back."}
-        </p>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "9px", margin: "18px 0", background: "rgba(242,169,22,.1)", border: "1px solid rgba(242,169,22,.26)", borderRadius: "14px", padding: "13px" }}>
+        </motion.p>
+        <motion.div {...scaleIn} transition={{ delay: 0.38, duration: 0.4, ease: [0.22, 1, 0.36, 1] }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "9px", margin: "18px 0", background: "rgba(242,169,22,.1)", border: "1px solid rgba(242,169,22,.26)", borderRadius: "14px", padding: "13px" }}>
           <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", display: "inline-block" }} />
           <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "20px", color: "#F4C95A" }}>+{lastReward} cowries</span>
-        </div>
-        <button onClick={onPlayAgain} style={{ width: "100%", padding: "15px", border: "none", borderRadius: "15px", background: "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "16px", cursor: "pointer", boxShadow: "0 12px 26px -10px rgba(239,75,60,.7)" }}>
+        </motion.div>
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onPlayAgain} style={{ width: "100%", padding: "15px", border: "none", borderRadius: "15px", background: "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "16px", cursor: "pointer", boxShadow: "0 12px 26px -10px rgba(239,75,60,.7)" }}>
           Play again
-        </button>
+        </motion.button>
         <button onClick={onClose} style={{ width: "100%", marginTop: "10px", padding: "13px", border: "1px solid rgba(247,179,43,.16)", borderRadius: "15px", background: "transparent", color: "#C9B49C", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>
           Back to lobby
         </button>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -247,11 +247,11 @@ function DailyOverlay({ streak, dailyClaimed, onClaim, onClose }: { streak: numb
             const past = day < cur;
             const today = day === cur;
             return (
-              <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "clamp(6px,2vw,10px) 1px clamp(5px,1.8vw,8px)", borderRadius: "10px", background: today ? "rgba(242,169,22,.18)" : past ? "rgba(31,168,92,.1)" : "rgba(255,238,214,.04)", border: `1px solid ${today ? "#F2A916" : past ? "rgba(31,168,92,.3)" : "rgba(255,238,214,.07)"}` }}>
+              <motion.div key={idx} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: idx * 0.045, ease: [0.22, 1, 0.36, 1] }} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "clamp(6px,2vw,10px) 1px clamp(5px,1.8vw,8px)", borderRadius: "10px", background: today ? "rgba(242,169,22,.18)" : past ? "rgba(31,168,92,.1)" : "rgba(255,238,214,.04)", border: `1px solid ${today ? "#F2A916" : past ? "rgba(31,168,92,.3)" : "rgba(255,238,214,.07)"}` }}>
                 <span style={{ fontSize: "clamp(7px,2.2vw,9px)", fontWeight: 800, color: today ? "#F4C95A" : past ? "#6FA582" : "#8c7866" }}>D{day}</span>
                 <span style={{ width: "clamp(12px,3.5vw,15px)", height: "clamp(12px,3.5vw,15px)", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", margin: "3px 0 2px", opacity: 0.95, display: "inline-block" }} />
                 <span style={{ fontSize: "clamp(9px,2.8vw,11px)", fontWeight: 800, color: today ? "#FBEFE0" : past ? "#9FC2AC" : "#A8927C" }}>{rw}</span>
-              </div>
+              </motion.div>
             );
           })}
         </div>
