@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from "wagmi";
+import { celo } from "wagmi/chains";
 import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
 import Leaderboard from "@/components/Leaderboard";
@@ -273,6 +274,8 @@ function DailyOverlay({ streak, dailyClaimed, onClaim, onClose }: { streak: numb
 export default function Home() {
   const { address, isConnected, isConnecting } = useAccount();
   const { connect, connectors } = useConnect();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
 
   // Mount guard: wagmi with ssr:false still server-renders in Next.js App Router.
   // The server has no wallet (isConnected=false) while the client may already be
@@ -303,6 +306,13 @@ export default function Home() {
       if (connector) connect({ connector });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-switch to Celo if wallet is on the wrong network
+  useEffect(() => {
+    if (isConnected && chainId !== celo.id) {
+      switchChain({ chainId: celo.id });
+    }
+  }, [isConnected, chainId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigate to lobby once wallet connects
   useEffect(() => {
