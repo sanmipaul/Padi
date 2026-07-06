@@ -120,12 +120,12 @@ function AppBar({ address, cowries, streak, onDisconnect }: { address?: string; 
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px clamp(14px,4.5vw,22px) 10px", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
         <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "clamp(20px,6vw,26px)", letterSpacing: "-1px", color: "#FBEFE0" }}>padi</span>
-        <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "5px", boxShadow: "0 0 8px #EF4B3C", display: "inline-block" }} />
+        <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "5px", boxShadow: "0 0 8px #EF4B3C", display: "inline-block", animation: "redDot 2.8s ease-in-out infinite" }} />
       </div>
       <div className="appbar-inner" style={{ display: "flex", gap: "7px", alignItems: "center", flexWrap: "nowrap", minWidth: 0 }}>
         {/* Streak */}
         <div style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(242,169,22,.13)", border: "1px solid rgba(242,169,22,.3)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
-          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#F2A916", boxShadow: "0 0 8px #F2A916", display: "inline-block" }} />
+          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#F2A916", boxShadow: "0 0 8px #F2A916", display: "inline-block", animation: "goldDot 3s ease-in-out infinite" }} />
           <span style={{ color: "#F2A916", fontWeight: 800, fontSize: "12px" }}>{streak}</span>
           <span style={{ color: "#C99A2E", fontWeight: 600, fontSize: "11px" }}>day</span>
         </div>
@@ -139,7 +139,7 @@ function AppBar({ address, cowries, streak, onDisconnect }: { address?: string; 
           <button
             onClick={() => setShowDisconnect(v => !v)}
             style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.18)", borderRadius: "999px", padding: "5px 10px", cursor: "pointer" }}>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 6px #1FA85C", display: "inline-block", flexShrink: 0 }} />
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 6px #1FA85C", display: "inline-block", flexShrink: 0, animation: "connectedPulse 2.5s ease-in-out infinite" }} />
             <span style={{ color: "#A8927C", fontWeight: 600, fontSize: "11px" }}>
               {address ? `${address.slice(0, 4)}…${address.slice(-3)}` : "●●"}
             </span>
