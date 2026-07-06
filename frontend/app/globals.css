@@ -58,6 +58,26 @@ button { -webkit-tap-highlight-color: transparent; }
   0%, 100% { opacity: .85; }
   50%       { opacity: 1; }
 }
+@keyframes dotBreath {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.5); }
+}
+@keyframes prizeGlow {
+  0%, 100% { text-shadow: 0 0 20px rgba(242,169,22,.32); }
+  50%       { text-shadow: 0 0 46px rgba(242,169,22,.82); }
+}
+@keyframes connectedPulse {
+  0%, 100% { transform: scale(1);   box-shadow: 0 0 6px #1FA85C; }
+  50%       { transform: scale(1.4); box-shadow: 0 0 13px #1FA85C; }
+}
+@keyframes goldDot {
+  0%, 100% { transform: scale(1);   box-shadow: 0 0 8px #F2A916; }
+  50%       { transform: scale(1.5); box-shadow: 0 0 15px #F2A916; }
+}
+@keyframes redDot {
+  0%, 100% { transform: scale(1);   box-shadow: 0 0 8px #EF4B3C; }
+  50%       { transform: scale(1.4); box-shadow: 0 0 14px #EF4B3C; }
+}
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
