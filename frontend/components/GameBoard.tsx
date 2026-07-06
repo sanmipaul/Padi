@@ -223,10 +223,20 @@ function PiecesRow({ playerPieces, dice, onMove }: { playerPieces: readonly numb
         const rel = Number(playerPieces[i] ?? 0);
         const movable = canMovePiece(rel, dice);
         return (
-          <button key={i} onClick={movable ? () => onMove(i) : undefined} disabled={!movable} style={{ flex: 1, padding: "11px 4px", borderRadius: "13px", cursor: movable ? "pointer" : "default", background: movable ? "linear-gradient(135deg,#F2622E,#EF4B3C)" : "rgba(255,238,214,.05)", color: movable ? "#fff" : "#7d6a58", fontWeight: 700, border: movable ? "none" : "1px solid rgba(255,238,214,.08)", boxShadow: movable ? "0 8px 18px -8px rgba(239,75,60,.8)" : "none", animation: movable ? "glowPulse 1.6s infinite" : "none" }}>
+          <motion.button
+            key={i}
+            onClick={movable ? () => onMove(i) : undefined}
+            disabled={!movable}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, delay: i * 0.06, ease: "easeOut" }}
+            whileHover={movable ? { scale: 1.05 } : {}}
+            whileTap={movable ? { scale: 0.93 } : {}}
+            style={{ flex: 1, padding: "11px 4px", borderRadius: "13px", cursor: movable ? "pointer" : "default", background: movable ? "linear-gradient(135deg,#F2622E,#EF4B3C)" : "rgba(255,238,214,.05)", color: movable ? "#fff" : "#7d6a58", fontWeight: 700, border: movable ? "none" : "1px solid rgba(255,238,214,.08)", boxShadow: movable ? "0 8px 18px -8px rgba(239,75,60,.8)" : "none", animation: movable ? "glowPulse 1.6s infinite" : "none" }}
+          >
             <div style={{ fontSize: "10px", opacity: 0.75, fontWeight: 600 }}>Piece {i + 1}</div>
             <div style={{ fontSize: "14px", marginTop: "2px" }}>{labels(rel)}</div>
-          </button>
+          </motion.button>
         );
       })}
     </div>
