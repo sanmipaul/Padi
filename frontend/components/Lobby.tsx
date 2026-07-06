@@ -145,8 +145,8 @@ export default function Lobby({ cowries, streak, localWins, dailyClaimed, onEnte
           { value: streak,       label: "Streak", color: "#F2A916" },
           { value: gamesDisplay, label: "Games",  color: "#FBEFE0" },
         ].map(({ value, label, color }, i) => (
-          <motion.div key={label} {...scaleIn} transition={{ duration: 0.38, delay: 0.08 + i * 0.09, ease: [0.22, 1, 0.36, 1] }} style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px 8px", textAlign: "center" }}>
-            <p style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "24px", color }}>{value}</p>
+          <motion.div key={label} className="stat-card" {...scaleIn} transition={{ duration: 0.38, delay: 0.08 + i * 0.09, ease: [0.22, 1, 0.36, 1] }} style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px 8px", textAlign: "center" }}>
+            <p className="stat-value" style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "24px", color }}>{value}</p>
             <p style={{ margin: "1px 0 0", color: "#8c7866", fontSize: "11px", fontWeight: 600 }}>{label}</p>
           </motion.div>
         ))}

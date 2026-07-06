@@ -88,7 +88,8 @@ button { -webkit-tap-highlight-color: transparent; }
   width: 100%;
   max-width: min(560px, 100dvw);
   margin: 0 auto;
-  min-height: 100dvh;
+  /* Use height (not min-height) so flex children can properly overflow-scroll */
+  height: 100dvh;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -114,4 +115,13 @@ button { -webkit-tap-highlight-color: transparent; }
 
   /* Squeeze lobby cards slightly */
   .prize-amount { font-size: 32px !important; }
+
+  /* Stat card numbers on tiny screens */
+  .stat-value { font-size: 20px !important; }
+  .stat-card  { padding: 10px 4px !important; }
+}
+
+/* ── Landscape phone: let landing hero scroll naturally ──────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .landing-hero { justify-content: flex-start !important; padding-top: 16px !important; }
 }

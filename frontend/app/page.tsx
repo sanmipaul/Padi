@@ -29,7 +29,7 @@ function alpha(hex: string, a: number) {
 /* ─── Landing Page ───────────────────────────────────────────────── */
 function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => void; isConnecting: boolean; isMiniPay: boolean }) {
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
       {/* Background glows */}
       <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse 80% 40% at 50% 0%,rgba(239,75,60,.18),transparent 60%),radial-gradient(circle at 15% 60%,rgba(242,169,22,.1),transparent 36%),radial-gradient(circle at 90% 40%,rgba(61,107,255,.1),transparent 36%)", pointerEvents: "none" }} />
 
@@ -46,7 +46,7 @@ function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => 
       </div>
 
       {/* Hero */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "30px 28px 0", textAlign: "center", position: "relative", gap: "8px" }}>
+      <div className="landing-hero" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "clamp(20px,5vw,30px) clamp(16px,5vw,28px) 0", textAlign: "center", position: "relative", gap: "8px" }}>
         {/* Colour circles — visual hint of Ludo pieces */}
         <motion.div {...fadeIn} transition={{ duration: 0.5 }} style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
           {["#EF4B3C","#1FA85C","#3D6BFF","#F2A916"].map((c, i) => (
@@ -420,7 +420,7 @@ export default function Home() {
       )}
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: "auto" }} className="no-scrollbar">
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0 }} className="no-scrollbar">
         <AnimatePresence mode="wait">
           {screen === "onboarding" && (
             <motion.div key="onboarding" {...fadeIn} transition={{ duration: 0.3 }}>

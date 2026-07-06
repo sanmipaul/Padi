@@ -186,7 +186,7 @@ export default function Leaderboard({ onBack, localWins = 0 }: { onBack: () => v
                 <span style={{ width: "34px", height: "34px", borderRadius: "50%", background: p.isYou ? "#EF4B3C" : "rgba(255,238,214,.1)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: "13px", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", flexShrink: 0 }}>
                   {p.label[0].toUpperCase()}
                 </span>
-                <span style={{ flex: 1, fontWeight: 700, fontSize: "14px", color: p.isYou ? "#FBEFE0" : "#D8C4AC", fontFamily: "monospace" }}>
+                <span style={{ flex: 1, minWidth: 0, fontWeight: 700, fontSize: "14px", color: p.isYou ? "#FBEFE0" : "#D8C4AC", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {p.label}
                 </span>
                 <span style={{ fontWeight: 700, fontSize: "13px", color: p.isYou ? "#EF8C7E" : "#A8927C" }}>
