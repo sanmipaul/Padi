@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits } from "viem";
 import { PADI_ADDRESS, PADI_ABI, ERC20_ABI, USDM_ADDRESS } from "@/lib/contracts";
+
+const fadeUp  = { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 } };
+const scaleIn = { initial: { opacity: 0, scale: 0.88 }, animate: { opacity: 1, scale: 1 } };
 
 const COLORS = ["#EF4B3C", "#1FA85C", "#3D6BFF", "#F2A916"];
 const NAMES = ["You", "Chidi", "Amaka", "Tunde"];
