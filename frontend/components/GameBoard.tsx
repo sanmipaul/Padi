@@ -478,18 +478,26 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
       </motion.div>
 
       {/* AI speech bubble */}
-      {aiSpeech && (
-        <div style={{ display: "flex" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "999px", padding: "5px 14px 5px 5px" }}>
-            <span style={{ width: "25px", height: "25px", borderRadius: "50%", background: COLORS[1], display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "11px", fontWeight: 800, boxShadow: `0 0 8px ${COLORS[1]}` }}>
-              C
-            </span>
-            <span style={{ color: "#F2DFC6", fontSize: "13px", fontWeight: 600, fontStyle: "italic" }}>
-              &ldquo;{aiSpeech}&rdquo;
-            </span>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {aiSpeech && (
+          <motion.div
+            initial={{ opacity: 0, x: -14 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            style={{ display: "flex" }}
+          >
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "999px", padding: "5px 14px 5px 5px" }}>
+              <span style={{ width: "25px", height: "25px", borderRadius: "50%", background: COLORS[1], display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "11px", fontWeight: 800, boxShadow: `0 0 8px ${COLORS[1]}` }}>
+                C
+              </span>
+              <span style={{ color: "#F2DFC6", fontSize: "13px", fontWeight: 600, fontStyle: "italic" }}>
+                &ldquo;{aiSpeech}&rdquo;
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Board */}
       <motion.div
