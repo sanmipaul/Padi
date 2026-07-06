@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useAccount, useReadContract, useReadContracts, usePublicClient } from "wagmi";
 import { parseAbiItem } from "viem";
 import { PADI_ADDRESS, PADI_ABI } from "@/lib/contracts";
@@ -127,26 +128,36 @@ export default function Leaderboard({ onBack, localWins = 0 }: { onBack: () => v
       </div>
 
       {/* Prize pool banner — no fake reset timer */}
-      <div style={{ borderRadius: "18px", padding: "18px", background: "linear-gradient(135deg,#3a2012,#221107)", border: "1px solid rgba(242,169,22,.22)" }}>
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.42, ease: "easeOut" }}
+        style={{ borderRadius: "18px", padding: "18px", background: "linear-gradient(135deg,#3a2012,#221107)", border: "1px solid rgba(242,169,22,.22)" }}
+      >
         <p style={{ margin: 0, color: "#C99A2E", fontSize: "11px", fontWeight: 800, letterSpacing: "1px" }}>PRIZE POOL</p>
-        <p style={{ margin: "5px 0 0", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "30px", color: "#F4C95A", lineHeight: 1 }}>
+        <p style={{ margin: "5px 0 0", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "30px", color: "#F4C95A", lineHeight: 1, animation: "prizeGlow 2.8s ease-in-out infinite" }}>
           {prizeDisplay} <span style={{ fontSize: "14px", color: "#C99A2E", fontWeight: 700 }}>USDM</span>
         </p>
         <p style={{ margin: "6px 0 0", color: "#8c7866", fontSize: "12px" }}>Grows with every wager · paid out to winners</p>
-      </div>
+      </motion.div>
 
       {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-        <div style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px", textAlign: "center" }}>
-          <p style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "22px", color: "#FBEFE0" }}>{totalDisplay}</p>
-          <p style={{ margin: "2px 0 0", color: "#8c7866", fontSize: "11px", fontWeight: 600 }}>Total Games</p>
-        </div>
-        <div style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px", textAlign: "center" }}>
-          <p style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "22px", color: "#EF4B3C" }}>
-            {Math.max(localWins, entries.find(e => e.isYou)?.wins ?? 0)}
-          </p>
-          <p style={{ margin: "2px 0 0", color: "#8c7866", fontSize: "11px", fontWeight: 600 }}>Your Wins</p>
-        </div>
+        {[
+          { val: totalDisplay, label: "Total Games", color: "#FBEFE0" },
+          { val: Math.max(localWins, entries.find(e => e.isYou)?.wins ?? 0), label: "Your Wins", color: "#EF4B3C" },
+        ].map(({ val, label, color }, i) => (
+          <motion.div
+            key={label}
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35, delay: 0.1 + i * 0.09, ease: [0.22, 1, 0.36, 1] }}
+            style={{ background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "16px", padding: "13px", textAlign: "center" }}
+          >
+            <p style={{ margin: 0, fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "22px", color }}>{val}</p>
+            <p style={{ margin: "2px 0 0", color: "#8c7866", fontSize: "11px", fontWeight: 600 }}>{label}</p>
+          </motion.div>
+        ))}
       </div>
 
       {/* Leaderboard rows */}
