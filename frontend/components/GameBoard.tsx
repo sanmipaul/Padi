@@ -469,7 +469,13 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
       </div>
 
       {/* Seats */}
-      <SeatsRow pieces={gs.pieces} totalSeats={totalSeats} currentSeat={gs.currentSeat} finished={gs.finished} />
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+      >
+        <SeatsRow pieces={gs.pieces} totalSeats={totalSeats} currentSeat={gs.currentSeat} finished={gs.finished} />
+      </motion.div>
 
       {/* AI speech bubble */}
       {aiSpeech && (
