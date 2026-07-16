@@ -7,13 +7,14 @@ import { celo } from "wagmi/chains";
 import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
 import Leaderboard from "@/components/Leaderboard";
+import PvPGameBoard, { type PvpMeta } from "@/components/PvPGameBoard";
 
 const fadeUp   = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 const fadeIn   = { initial: { opacity: 0 },         animate: { opacity: 1 } };
 const scaleIn  = { initial: { opacity: 0, scale: 0.88 }, animate: { opacity: 1, scale: 1 } };
 const slideLeft = { initial: { opacity: 0, x: -16 }, animate: { opacity: 1, x: 0 } };
 
-type Screen = "onboarding" | "lobby" | "game" | "ranks";
+type Screen = "onboarding" | "lobby" | "game" | "pvp" | "ranks";
 type Overlay = null | "win" | "lose" | "daily";
 
 interface ToastState { text: string; color: string; }
@@ -285,18 +286,28 @@ export default function Home() {
   const [screen, setScreen] = useState<Screen>("onboarding");
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [gameId, setGameId] = useState<bigint | null>(null);
+  const [pvpMeta, setPvpMeta] = useState<PvpMeta | null>(null);
   const [cowries, setCowries] = useState(0);
   const [streak, setStreak] = useState(0);
   const [localWins, setLocalWins] = useState(0);
+  const [winStreak, setWinStreak] = useState(0);
   const [lastReward, setLastReward] = useState(0);
   const [dailyClaimed, setDailyClaimed] = useState(false);
   const [won, setWon] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isMiniPay, setIsMiniPay] = useState(false);
+  const [autoJoinId, setAutoJoinId] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Mark as mounted so we skip the server-rendered shell entirely
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const joinParam = params.get("join");
+      if (joinParam) setAutoJoinId(joinParam);
+    }
+  }, []);
 
   // Auto-connect when running inside MiniPay (wallet is injected automatically)
   useEffect(() => {
@@ -371,9 +382,15 @@ export default function Home() {
     setScreen("game");
   }
 
+  function handleEnterPvp(gid: bigint, mySeat: 0 | 1, wager: bigint, opponent: string) {
+    setPvpMeta({ gameId: gid, mySeat, wager, opponentAddress: opponent });
+    setScreen("pvp");
+  }
+
   function handleBack() {
     setScreen("lobby");
     setGameId(null);
+    setPvpMeta(null);
   }
 
   function handleGameEnd(didWin: boolean) {
@@ -384,6 +401,9 @@ export default function Home() {
     if (didWin) {
       setStreak((s) => s + 1);
       setLocalWins((w) => w + 1);
+      setWinStreak((s) => s + 1);
+    } else {
+      setWinStreak(0);
     }
     setOverlay(didWin ? "win" : "lose");
   }
@@ -404,7 +424,7 @@ export default function Home() {
     setScreen(to);
   }
 
-  const isApp = screen === "lobby" || screen === "game" || screen === "ranks";
+  const isApp = screen === "lobby" || screen === "game" || screen === "pvp" || screen === "ranks";
 
   if (!mounted) return null;
 
@@ -440,8 +460,11 @@ export default function Home() {
                       cowries={cowries}
                       streak={streak}
                       localWins={localWins}
+                      winStreak={winStreak}
                       dailyClaimed={dailyClaimed}
+                      initialJoinId={autoJoinId ?? undefined}
                       onEnterGame={handleEnterGame}
+                      onEnterPvp={handleEnterPvp}
                       onOpenDaily={() => setOverlay("daily")}
                       onViewRanks={() => setScreen("ranks")}
                       showToast={showToast}
@@ -452,6 +475,16 @@ export default function Home() {
                   <motion.div key="game" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                     <GameBoard
                       gameId={gameId}
+                      onBack={handleBack}
+                      onGameEnd={handleGameEnd}
+                      showToast={showToast}
+                    />
+                  </motion.div>
+                )}
+                {screen === "pvp" && pvpMeta !== null && (
+                  <motion.div key="pvp" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                    <PvPGameBoard
+                      meta={pvpMeta}
                       onBack={handleBack}
                       onGameEnd={handleGameEnd}
                       showToast={showToast}
@@ -470,7 +503,7 @@ export default function Home() {
       </div>
 
       {/* Bottom Nav — only in app screens, not during active game */}
-      {isApp && screen !== "game" && (
+      {isApp && screen !== "game" && screen !== "pvp" && (
         <BottomNav screen={screen} onNavigate={handleNavigation} />
       )}
 
