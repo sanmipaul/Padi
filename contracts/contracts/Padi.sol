@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @title Padi — on-chain Ludo vs AI on Celo
-/// @notice Single-player Ludo: you vs 1-3 AI opponents. AI runs in the same tx as your move.
-/// @dev Uses block.prevrandao for dice randomness. Safe squares prevent captures.
+/// @title Padi — on-chain Ludo on Celo (AI + PvP modes)
+/// @notice Play Ludo vs AI, or challenge another wallet to 1v1. Moves sync via off-chain relay.
+/// @dev Uses block.prevrandao for AI dice randomness. PvP dice are client-side, broadcast via relay.
 contract Padi is Ownable, ReentrancyGuard {
     IERC20 public immutable usdm;
 
@@ -17,6 +17,7 @@ contract Padi is Ownable, ReentrancyGuard {
     uint8 public constant AT_BASE      = 0;
     uint8 public constant PIECES       = 4;
 
+    // ── Solo AI game ───────────────────────────────────────────────────────────
     enum GameState { ACTIVE, FINISHED }
 
     struct Game {
@@ -32,13 +33,35 @@ contract Padi is Ownable, ReentrancyGuard {
         uint256 nonce;
     }
 
+    // ── PvP game ──────────────────────────────────────────────────────────────
+    /// WAITING  — created, no opponent yet
+    /// ACTIVE   — both players joined, game in progress
+    /// FINISHED — settled, payout complete
+    /// DISPUTED — winner contested, awaiting owner arbitration
+    enum PvpState { WAITING, ACTIVE, FINISHED, DISPUTED }
+
+    struct PvpGame {
+        address player1;   // creator = seat 0
+        address player2;   // joiner  = seat 1
+        uint256 wager;     // each player puts up this amount
+        PvpState pvpState;
+        address claimedWinner;
+        uint256 claimTime;
+    }
+
     uint256 private _gameCounter;
-    mapping(uint256 => Game) private games;
+    mapping(uint256 => Game)    private games;
+    mapping(uint256 => PvpGame) public  pvpGames;
+
     mapping(address => uint256[]) public playerGames;
-    mapping(address => uint256) public totalWins;
+    mapping(address => uint256)   public totalWins;
     uint256 public weeklyPrizePool;
     uint256 public platformFeeBalance;
 
+    /// Opponent has this long to dispute after a win is claimed (blocks ≈ seconds on Celo)
+    uint256 public constant DISPUTE_WINDOW = 10 minutes;
+
+    // ── AI events ─────────────────────────────────────────────────────────────
     event GameCreated(uint256 indexed gameId, address indexed player, uint8 aiCount);
     event DiceRolled(uint256 indexed gameId, uint8 seat, uint8 dice);
     event PieceMoved(uint256 indexed gameId, uint8 seat, uint8 piece, uint8 from, uint8 to);
@@ -46,6 +69,13 @@ contract Padi is Ownable, ReentrancyGuard {
     event GameFinished(uint256 indexed gameId, address indexed winner, uint256 prize);
     event PrizeDistributed(address indexed recipient, uint256 amount);
     event TurnChanged(uint256 indexed gameId, uint8 seat);
+
+    // ── PvP events ────────────────────────────────────────────────────────────
+    event PvpGameCreated(uint256 indexed gameId, address indexed player1, uint256 wager);
+    event PvpGameJoined(uint256 indexed gameId, address indexed player2);
+    event PvpWinClaimed(uint256 indexed gameId, address indexed claimant);
+    event PvpWinConfirmed(uint256 indexed gameId, address indexed winner, uint256 prize);
+    event PvpDisputed(uint256 indexed gameId, address indexed disputer);
 
     uint8[8] private SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
 
@@ -201,6 +231,113 @@ contract Padi is Ownable, ReentrancyGuard {
         require(g.wager > 0, "no wager");
         g.state = GameState.FINISHED;
         usdm.transfer(g.player, g.wager);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PvP functions
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// @notice Create a 1v1 challenge. Opponent joins via joinPvpGame.
+    function createPvpGame(uint256 wager) external nonReentrant returns (uint256 gameId) {
+        if (wager > 0) require(usdm.transferFrom(msg.sender, address(this), wager), "transfer failed");
+        gameId = ++_gameCounter;
+        pvpGames[gameId] = PvpGame({
+            player1: msg.sender,
+            player2: address(0),
+            wager: wager,
+            pvpState: PvpState.WAITING,
+            claimedWinner: address(0),
+            claimTime: 0
+        });
+        playerGames[msg.sender].push(gameId);
+        emit PvpGameCreated(gameId, msg.sender, wager);
+    }
+
+    /// @notice Accept a challenge. Pays matching wager and activates the game.
+    function joinPvpGame(uint256 gameId) external nonReentrant {
+        PvpGame storage g = pvpGames[gameId];
+        require(g.player1 != address(0),         "no such game");
+        require(g.pvpState == PvpState.WAITING,  "not waiting");
+        require(msg.sender != g.player1,         "can't join own game");
+        if (g.wager > 0) require(usdm.transferFrom(msg.sender, address(this), g.wager), "transfer failed");
+        g.player2   = msg.sender;
+        g.pvpState  = PvpState.ACTIVE;
+        playerGames[msg.sender].push(gameId);
+        emit PvpGameJoined(gameId, msg.sender);
+    }
+
+    /// @notice Winner calls this after the game ends on the client.
+    ///         Starts a DISPUTE_WINDOW during which the opponent can dispute.
+    function claimPvpWin(uint256 gameId) external {
+        PvpGame storage g = pvpGames[gameId];
+        require(g.pvpState == PvpState.ACTIVE,                           "not active");
+        require(msg.sender == g.player1 || msg.sender == g.player2,      "not a player");
+        require(g.claimedWinner == address(0),                           "already claimed");
+        g.claimedWinner = msg.sender;
+        g.claimTime     = block.timestamp;
+        emit PvpWinClaimed(gameId, msg.sender);
+    }
+
+    /// @notice Anyone can call this after the dispute window to finalise the claimed winner.
+    function finalisePvpWin(uint256 gameId) external {
+        PvpGame storage g = pvpGames[gameId];
+        require(g.pvpState == PvpState.ACTIVE,                      "not active");
+        require(g.claimedWinner != address(0),                      "no claim yet");
+        require(block.timestamp >= g.claimTime + DISPUTE_WINDOW,    "dispute window open");
+        _settlePvp(gameId, g.claimedWinner);
+    }
+
+    /// @notice Opponent calls this within the dispute window to contest the result.
+    function disputePvpResult(uint256 gameId) external {
+        PvpGame storage g = pvpGames[gameId];
+        require(g.pvpState == PvpState.ACTIVE,                           "not active");
+        require(g.claimedWinner != address(0),                           "no claim yet");
+        require(block.timestamp < g.claimTime + DISPUTE_WINDOW,          "window closed");
+        require(msg.sender == g.player1 || msg.sender == g.player2,      "not a player");
+        require(msg.sender != g.claimedWinner,                           "can't dispute own claim");
+        g.pvpState = PvpState.DISPUTED;
+        emit PvpDisputed(gameId, msg.sender);
+    }
+
+    /// @notice Owner arbitrates disputed games.
+    function arbitratePvp(uint256 gameId, address winner) external onlyOwner {
+        PvpGame storage g = pvpGames[gameId];
+        require(g.pvpState == PvpState.DISPUTED, "not disputed");
+        require(winner == g.player1 || winner == g.player2, "invalid winner");
+        _settlePvp(gameId, winner);
+    }
+
+    /// @notice Creator can cancel a game that nobody has joined yet (refunds wager).
+    function cancelPvpGame(uint256 gameId) external {
+        PvpGame storage g = pvpGames[gameId];
+        require(g.player1 == msg.sender,             "not creator");
+        require(g.pvpState == PvpState.WAITING,      "already joined");
+        g.pvpState = PvpState.FINISHED;
+        if (g.wager > 0) usdm.transfer(msg.sender, g.wager);
+    }
+
+    function getPvpGame(uint256 gameId) external view returns (
+        address player1, address player2, uint256 wager,
+        uint8 pvpState, address claimedWinner, uint256 claimTime
+    ) {
+        PvpGame storage g = pvpGames[gameId];
+        return (g.player1, g.player2, g.wager, uint8(g.pvpState), g.claimedWinner, g.claimTime);
+    }
+
+    function _settlePvp(uint256 gameId, address winner) internal {
+        PvpGame storage g = pvpGames[gameId];
+        g.pvpState = PvpState.FINISHED;
+        uint256 totalPot = g.wager * 2;
+        uint256 prize    = 0;
+        if (totalPot > 0) {
+            uint256 platformFee  = (totalPot * 5) / 1000;   // 0.5%
+            prize                = (totalPot * 99) / 100;   // 99%
+            platformFeeBalance  += platformFee;
+            weeklyPrizePool     += totalPot - prize - platformFee;
+            usdm.transfer(winner, prize);
+        }
+        totalWins[winner]++;
+        emit PvpWinConfirmed(gameId, winner, prize);
     }
 
     function _isAllFinished(Game storage g, uint8 seat) internal view returns (bool) {
