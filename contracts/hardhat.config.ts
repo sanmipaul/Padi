@@ -13,9 +13,10 @@ const config: HardhatUserConfig = {
   },
   networks: {
     celo: {
-      url: "https://forno.celo.org",
+      url: process.env.CELO_RPC_URL ?? "https://forno.celo.org",
       chainId: 42220,
       accounts: [PRIVATE_KEY],
+      gasPrice: 250_000_000_000,  // 250 Gwei — current Celo mainnet base fee
     },
   },
   etherscan: {

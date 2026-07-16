@@ -1,8 +1,7 @@
 // USDM on Celo mainnet — same address as legacy cUSD, rebranded
 export const USDM_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a" as const;
 
-// Update this after deploying the new contract
-export const PADI_ADDRESS = "0x5E2a57CE2837CB0342B07aCc3e06eb4A92dd3256" as `0x${string}`;
+export const PADI_ADDRESS = "0x4cC0320028f252212BcDa76cE709622a7b2e67f2" as `0x${string}`;
 
 export const PADI_ABI = [
   // ── Solo AI functions ───────────────────────────────────────────────────────
