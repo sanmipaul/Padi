@@ -472,138 +472,108 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
 
   // ── Render ──────────────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "14px", paddingTop: "2px" }}>
+    <div style={{ height: "100%", display: "grid", gridTemplateRows: "auto 1fr auto", gap: "10px", overflow: "hidden" }}>
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <button onClick={onBack} style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#9C9CB6", fontSize: "13px", fontWeight: 600, borderRadius: "999px", padding: "7px 13px", cursor: "pointer" }}>
-          ← Leave
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {wager > 0n && (
-            <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(52,224,196,.1)", border: "1px solid rgba(52,224,196,.28)", borderRadius: "999px", padding: "5px 11px", color: "#34E0C4", fontWeight: 700, fontSize: "12px" }}>
-              ★ {(Number(wager) / 1e18).toFixed(2)} USDM
-            </span>
-          )}
-          <span style={{ color: "#4A4A5C", fontSize: "12px", fontWeight: 600 }}>Game #{gameId.toString()}</span>
+      {/* TOP — header + seats + speech */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <button onClick={onBack} style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#9C9CB6", fontSize: "13px", fontWeight: 600, borderRadius: "999px", padding: "7px 13px", cursor: "pointer" }}>
+            ← Leave
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {wager > 0n && (
+              <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(52,224,196,.1)", border: "1px solid rgba(52,224,196,.28)", borderRadius: "999px", padding: "5px 11px", color: "#34E0C4", fontWeight: 700, fontSize: "12px" }}>
+                ★ {(Number(wager) / 1e18).toFixed(2)} USDM
+              </span>
+            )}
+            <span style={{ color: "#4A4A5C", fontSize: "12px", fontWeight: 600 }}>Game #{gameId.toString()}</span>
+          </div>
         </div>
+
+        <SeatsRow pieces={gs.pieces} totalSeats={totalSeats} currentSeat={gs.currentSeat} finished={gs.finished} />
+
+        <AnimatePresence>
+          {aiSpeech && (
+            <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.28, ease: "easeOut" }} style={{ display: "flex" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "999px", padding: "5px 14px 5px 5px" }}>
+                <span style={{ width: "25px", height: "25px", borderRadius: "50%", background: COLORS[1], display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "11px", fontWeight: 800, boxShadow: `0 0 8px ${COLORS[1]}` }}>C</span>
+                <span style={{ color: "#F2DFC6", fontSize: "13px", fontWeight: 600, fontStyle: "italic" }}>&ldquo;{aiSpeech}&rdquo;</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Seats */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
-      >
-        <SeatsRow pieces={gs.pieces} totalSeats={totalSeats} currentSeat={gs.currentSeat} finished={gs.finished} />
-      </motion.div>
+      {/* MIDDLE — board fills remaining height */}
+      <div style={{ minHeight: 0, display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          style={{ height: "100%", maxWidth: "100%", aspectRatio: "1 / 1" }}
+        >
+          <Board pieces={gs.pieces} totalSeats={totalSeats} canMove={canMoveNow} dice={gs.lastDice} onMove={doMove} />
+        </motion.div>
+      </div>
 
-      {/* AI speech bubble */}
-      <AnimatePresence>
-        {aiSpeech && (
-          <motion.div
-            initial={{ opacity: 0, x: -14 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.28, ease: "easeOut" }}
-            style={{ display: "flex" }}
-          >
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "999px", padding: "5px 14px 5px 5px" }}>
-              <span style={{ width: "25px", height: "25px", borderRadius: "50%", background: COLORS[1], display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "11px", fontWeight: 800, boxShadow: `0 0 8px ${COLORS[1]}` }}>
-                C
-              </span>
-              <span style={{ color: "#F2DFC6", fontSize: "13px", fontWeight: 600, fontStyle: "italic" }}>
-                &ldquo;{aiSpeech}&rdquo;
-              </span>
+      {/* BOTTOM — dice row + piece picker + game over */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", borderRadius: "16px", padding: "11px 13px" }}>
+          <Die face={displayFace} rolling={rolling} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#ECECF2", lineHeight: 1.3 }}>{statusText}</p>
+            {!gs.finished && !settling && (
+              <p style={{ margin: "1px 0 0", fontSize: "10px", color: "#4A4A5C" }}>No signing needed — one tx at the end</p>
+            )}
+          </div>
+          {canRollNow ? (
+            <motion.button onClick={doRoll} whileTap={{ scale: 0.93 }}
+              style={{ flexShrink: 0, padding: "11px 18px", border: "none", borderRadius: "13px", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "15px", cursor: "pointer", boxShadow: "0 10px 22px -8px rgba(123,97,255,.8)", animation: "glowPulse 1.8s infinite" }}>
+              Roll
+            </motion.button>
+          ) : (
+            <div style={{ flexShrink: 0, padding: "11px 16px", borderRadius: "13px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "#4A4A5C", fontWeight: 700, fontSize: "13px" }}>
+              {rolling ? "…" : canMoveNow ? "Pick" : settling ? "⏳" : "Wait"}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Board */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <Board pieces={gs.pieces} totalSeats={totalSeats} canMove={canMoveNow} dice={gs.lastDice} onMove={doMove} />
-      </motion.div>
-
-      {/* Dice + status row */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.38, delay: 0.1, ease: "easeOut" }}
-        style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", borderRadius: "18px", padding: "13px 15px" }}
-      >
-        <Die face={displayFace} rolling={rolling} />
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#ECECF2", lineHeight: 1.3 }}>{statusText}</p>
-          {!gs.finished && !settling && (
-            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#4A4A5C" }}>No signing needed — one tx at the end</p>
           )}
         </div>
-        {canRollNow ? (
-          <motion.button
-            onClick={doRoll}
-            whileTap={{ scale: 0.93 }}
-            style={{ padding: "14px 22px", border: "none", borderRadius: "14px", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "16px", cursor: "pointer", boxShadow: "0 10px 22px -8px rgba(123,97,255,.8)", animation: "glowPulse 1.8s infinite" }}
-          >
-            Roll
-          </motion.button>
-        ) : (
-          <div style={{ padding: "14px 18px", borderRadius: "14px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "#4A4A5C", fontWeight: 700, fontSize: "13px" }}>
-            {rolling ? "…" : canMoveNow ? "Pick" : settling ? "⏳" : "Wait"}
-          </div>
-        )}
-      </motion.div>
 
-      {/* Piece picker */}
-      <AnimatePresence>
-        {canMoveNow && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={{ duration: 0.28, ease: "easeOut" }}
-          >
-            <p style={{ margin: "0 0 8px", color: "#74748C", fontSize: "12px", fontWeight: 600 }}>Tap a glowing piece — on the board or below</p>
-            <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} onMove={doMove} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {canMoveNow && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.22, ease: "easeOut" }}>
+              <p style={{ margin: "0 0 6px", color: "#74748C", fontSize: "11px", fontWeight: 600 }}>Tap a glowing piece — on the board or below</p>
+              <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} onMove={doMove} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Game over card */}
-      <AnimatePresence>
-      {gs.finished && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          style={{ borderRadius: "20px", padding: "20px", textAlign: "center", background: gs.playerWon ? "rgba(52,224,196,.1)" : "rgba(255,92,138,.1)", border: `1px solid ${gs.playerWon ? "rgba(52,224,196,.32)" : "rgba(255,92,138,.28)"}` }}
-        >
-          {settling ? (
-            <>
-              <p style={{ margin: "0 0 6px", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "20px", color: "#34E0C4" }}>
-                {gs.playerWon ? "You won! Settling wager…" : "Game over. Settling wager…"}
-              </p>
-              <p style={{ margin: 0, color: "#74748C", fontSize: "13px" }}>
-                {settleSubmitting ? "Check your wallet to sign." : "Waiting for confirmation…"}
-              </p>
-            </>
-          ) : wager === 0n ? (
-            <>
-              <p style={{ margin: "0 0 4px", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "22px", color: gs.playerWon ? "#34E0C4" : "#FF5C8A" }}>
-                {gs.playerWon ? "You won!" : "AI padi wins"}
-              </p>
-              <button onClick={onBack} style={{ marginTop: "14px", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "999px", padding: "10px 20px", color: "#C5C5D8", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>
-                Back to lobby
-              </button>
-            </>
-          ) : null}
-        </motion.div>
-      )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {gs.finished && (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+              style={{ borderRadius: "16px", padding: "14px 16px", textAlign: "center", background: gs.playerWon ? "rgba(52,224,196,.1)" : "rgba(255,92,138,.1)", border: `1px solid ${gs.playerWon ? "rgba(52,224,196,.32)" : "rgba(255,92,138,.28)"}` }}>
+              {settling ? (
+                <>
+                  <p style={{ margin: "0 0 4px", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "17px", color: "#34E0C4" }}>
+                    {gs.playerWon ? "You won! Settling wager…" : "Game over. Settling wager…"}
+                  </p>
+                  <p style={{ margin: 0, color: "#74748C", fontSize: "12px" }}>
+                    {settleSubmitting ? "Check your wallet to sign." : "Waiting for confirmation…"}
+                  </p>
+                </>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <p style={{ margin: 0, fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "18px", color: gs.playerWon ? "#34E0C4" : "#FF5C8A" }}>
+                    {gs.playerWon ? "You won!" : "AI padi wins"}
+                  </p>
+                  <button onClick={onBack} style={{ flexShrink: 0, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "999px", padding: "8px 16px", color: "#C5C5D8", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>
+                    Back to lobby
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
