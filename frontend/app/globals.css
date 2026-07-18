@@ -6,49 +6,61 @@
 
 body {
   margin: 0;
-  background: #0e0904;
-  background-image: radial-gradient(circle at 50% -10%, #221406, #0c0703 70%);
+  background: #07070C;
   min-height: 100dvh;
-  font-family: var(--font-hanken), 'Hanken Grotesk', sans-serif;
+  font-family: var(--font-manrope), 'Manrope', sans-serif;
   -webkit-font-smoothing: antialiased;
-  color: #FBEFE0;
+  color: #ECECF2;
 }
 
-::-webkit-scrollbar { width: 0; height: 0; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 9px; }
 button { -webkit-tap-highlight-color: transparent; }
 
+/* ── App shell ────────────────────────────────────────────────────── */
+.app-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Animations ───────────────────────────────────────────────────── */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-12px); }
+}
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 10px 26px -10px rgba(239,75,60,.7); }
-  50%       { box-shadow: 0 12px 34px -6px rgba(239,75,60,.95); }
+  0%, 100% { box-shadow: 0 12px 30px -10px rgba(123,97,255,.6); }
+  50%       { box-shadow: 0 14px 42px -6px rgba(123,97,255,.9); }
 }
 @keyframes glowPulseGold {
-  0%, 100% { box-shadow: 0 10px 26px -10px rgba(242,169,22,.7); }
-  50%       { box-shadow: 0 12px 34px -6px rgba(242,169,22,.95); }
+  0%, 100% { box-shadow: 0 10px 26px -10px rgba(52,224,196,.6); }
+  50%       { box-shadow: 0 12px 34px -6px rgba(52,224,196,.95); }
 }
 @keyframes diceShake {
-  0%   { transform: rotate(-9deg) translateY(0); }
-  50%  { transform: rotate(9deg) translateY(-3px); }
-  100% { transform: rotate(-9deg); }
+  0%   { transform: rotate(-10deg) translateY(0); }
+  50%  { transform: rotate(10deg) translateY(-3px); }
+  100% { transform: rotate(-10deg); }
 }
 @keyframes pulseRing {
-  0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 6px 2px rgba(255,255,255,.45); }
-  50%       { box-shadow: 0 0 0 3px #fff, 0 0 13px 4px rgba(255,255,255,.8); }
+  0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 7px 2px rgba(255,255,255,.5); }
+  50%       { box-shadow: 0 0 0 3px #fff, 0 0 15px 5px rgba(52,224,196,.9); }
 }
 @keyframes popIn {
-  0%   { transform: scale(.82); opacity: 0; }
-  60%  { transform: scale(1.04); }
+  0%   { transform: scale(.85); opacity: 0; }
+  60%  { transform: scale(1.03); }
   100% { transform: scale(1); opacity: 1; }
 }
 @keyframes confettiFall {
-  0%   { transform: translateY(-20px) rotate(0deg); }
+  0%   { transform: translateY(-30px) rotate(0); }
   100% { transform: translateY(820px) rotate(560deg); }
 }
-@keyframes floaty {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-7px); }
-}
 @keyframes slideToast {
-  0%   { transform: translate(-50%, -16px); opacity: 0; }
+  0%   { transform: translate(-50%, -18px); opacity: 0; }
   100% { transform: translate(-50%, 0); opacity: 1; }
 }
 @keyframes spin {
@@ -58,70 +70,44 @@ button { -webkit-tap-highlight-color: transparent; }
   0%, 100% { opacity: .85; }
   50%       { opacity: 1; }
 }
-@keyframes dotBreath {
-  0%, 100% { transform: scale(1); }
-  50%       { transform: scale(1.5); }
+@keyframes radarPulse {
+  0%   { transform: scale(.3); opacity: .9; }
+  100% { transform: scale(1); opacity: 0; }
+}
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.4); opacity: .5; }
+}
+@keyframes screenIn {
+  0%   { opacity: 0; transform: translateY(14px) scale(.985); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes heroFadeUp {
+  0%   { opacity: 0; transform: translateY(22px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes orbDrift1 {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  50%       { transform: translate(30px,-24px) scale(1.12); }
+}
+@keyframes orbDrift2 {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  50%       { transform: translate(-26px,20px) scale(1.08); }
+}
+@keyframes orbDrift3 {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  50%       { transform: translate(18px,26px) scale(1.1); }
 }
 @keyframes prizeGlow {
-  0%, 100% { text-shadow: 0 0 20px rgba(242,169,22,.32); }
-  50%       { text-shadow: 0 0 46px rgba(242,169,22,.82); }
-}
-@keyframes connectedPulse {
-  0%, 100% { transform: scale(1);   box-shadow: 0 0 6px #1FA85C; }
-  50%       { transform: scale(1.4); box-shadow: 0 0 13px #1FA85C; }
-}
-@keyframes goldDot {
-  0%, 100% { transform: scale(1);   box-shadow: 0 0 8px #F2A916; }
-  50%       { transform: scale(1.5); box-shadow: 0 0 15px #F2A916; }
-}
-@keyframes redDot {
-  0%, 100% { transform: scale(1);   box-shadow: 0 0 8px #EF4B3C; }
-  50%       { transform: scale(1.4); box-shadow: 0 0 14px #EF4B3C; }
+  0%, 100% { text-shadow: 0 0 20px rgba(52,224,196,.32); }
+  50%       { text-shadow: 0 0 46px rgba(52,224,196,.82); }
 }
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* ── Responsive app shell ──────────────────────────────────────────── */
-/* Fills mobile exactly, centers at ≥ 560 px on tablet / desktop */
-.app-shell {
-  width: 100%;
-  max-width: min(560px, 100dvw);
-  margin: 0 auto;
-  /* Use height (not min-height) so flex children can properly overflow-scroll */
-  height: 100dvh;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(180deg, #1d1208 0%, #150d06 58%, #100a05 100%);
-  box-shadow: 0 0 90px rgba(0,0,0,.65);
-  overflow: hidden;
-}
-
-/* iOS notch / home-indicator safe-area helpers */
-.safe-top    { padding-top:    env(safe-area-inset-top); }
-.safe-bottom { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
-
-/* ── Small-screen overrides (≤ 360 px wide) ─────────────────────── */
-@media (max-width: 360px) {
-  /* Shrink hero wordmark */
-  .hero-h1 { font-size: clamp(38px, 13vw, 56px) !important; letter-spacing: -2px !important; }
-
-  /* Hide cowrie text label, keep the coin icon */
-  .appbar-cowries-text { display: none !important; }
-
-  /* Tighten AppBar gap */
-  .appbar-inner { gap: 5px !important; }
-
-  /* Squeeze lobby cards slightly */
-  .prize-amount { font-size: 32px !important; }
-
-  /* Stat card numbers on tiny screens */
-  .stat-value { font-size: 20px !important; }
-  .stat-card  { padding: 10px 4px !important; }
-}
-
-/* ── Landscape phone: let landing hero scroll naturally ──────────── */
+/* ── Responsive helpers ──────────────────────────────────────────── */
 @media (max-height: 500px) and (orientation: landscape) {
   .landing-hero { justify-content: flex-start !important; padding-top: 16px !important; }
+}
+@media (max-width: 480px) {
+  .stat-value { font-size: 20px !important; }
+  .stat-card  { padding: 10px 4px !important; }
 }

@@ -13,7 +13,7 @@ import {
 } from "@/lib/game-engine";
 
 /* ─── Constants ───────────────────────────────────────────────────── */
-const COLORS = ["#EF4B3C", "#1FA85C", "#3D6BFF", "#F2A916"];
+const COLORS = ["#34E0C4", "#8B7CFF", "#FF5C8A", "#FFB23E"];
 const NAMES  = ["You", "Chidi", "Amaka", "Tunde"];
 const SEAT_OFFSET = [0, 13, 26, 39];
 const SAFE_GLOBAL = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
@@ -49,21 +49,21 @@ function getCellBg(row: number, col: number, totalSeats: number): string {
   if (hsSeat !== undefined && hsSeat < totalSeats) return alpha(COLORS[hsSeat], 0.5);
   const inCenter = row >= 6 && row <= 8 && col >= 6 && col <= 8;
   if (inCenter) {
-    if (col === 7 && row === 7) return "#120a05";
+    if (col === 7 && row === 7) return "#07070C";
     const qs = QUAD_C[key];
-    return qs !== undefined && qs < totalSeats ? alpha(COLORS[qs], 0.34) : "#120a05";
+    return qs !== undefined && qs < totalSeats ? alpha(COLORS[qs], 0.34) : "#07070C";
   }
   const pi = PATH_MAP.get(key);
   if (pi !== undefined) {
     const ss = START_SEAT[pi];
     if (ss !== undefined && ss < totalSeats) return alpha(COLORS[ss], 0.55);
-    return "#F0DFBC";
+    return "rgba(255,255,255,.1)";
   }
   if (row <= 5 && col <= 5) return alpha(COLORS[1], 0.16);
   if (row <= 5 && col >= 9) return alpha(COLORS[2], 0.16);
   if (row >= 9 && col <= 5) return alpha(COLORS[0], 0.16);
   if (row >= 9 && col >= 9) return alpha(COLORS[3], 0.16);
-  return "rgba(255,238,214,.03)";
+  return "rgba(255,255,255,.04)";
 }
 
 function canMovePiece(rel: number, dice: number): boolean {
@@ -137,9 +137,9 @@ function Board({ pieces, totalSeats, canMove, dice, onMove }: {
           </button>
         );
       } else if (isCenter) {
-        inner = <span style={{ color: "#F2A916", fontSize: "13px", lineHeight: 1 }}>★</span>;
+        inner = <span style={{ color: "#34E0C4", fontSize: "13px", lineHeight: 1 }}>★</span>;
       } else if (isSafe) {
-        inner = <span style={{ color: "#b89863", fontSize: "9px", lineHeight: 1 }}>★</span>;
+        inner = <span style={{ color: "#74748C", fontSize: "9px", lineHeight: 1 }}>★</span>;
       }
       cells.push(
         <div key={key} style={{ position: "relative", background: bg, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "2px" }}>
@@ -149,7 +149,7 @@ function Board({ pieces, totalSeats, canMove, dice, onMove }: {
     }
   }
   return (
-    <div style={{ width: "100%", aspectRatio: "1 / 1", display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gridTemplateRows: "repeat(15, 1fr)", gap: "1px", padding: "7px", background: "#241710", borderRadius: "18px", border: "1px solid rgba(247,179,43,.18)", boxShadow: "0 20px 50px -22px rgba(0,0,0,.85)" }}>
+    <div style={{ width: "100%", aspectRatio: "1 / 1", display: "grid", gridTemplateColumns: "repeat(15, 1fr)", gridTemplateRows: "repeat(15, 1fr)", gap: "1px", padding: "7px", background: "#0B0B14", borderRadius: "18px", border: "1px solid rgba(255,255,255,.1)", boxShadow: "0 20px 50px -22px rgba(0,0,0,.85)" }}>
       {cells}
     </div>
   );
@@ -162,10 +162,10 @@ const DOT_POSITIONS: Record<number, number[]> = {
 function Die({ face, rolling }: { face: number; rolling: boolean }) {
   const on = new Set(DOT_POSITIONS[face] ?? [4]);
   return (
-    <div style={{ width: "clamp(44px,13vw,56px)", height: "clamp(44px,13vw,56px)", flexShrink: 0, borderRadius: "14px", background: "linear-gradient(145deg,#fff,#efe1c9)", boxShadow: "0 6px 14px -4px rgba(0,0,0,.6),inset 0 -3px 4px rgba(0,0,0,.1)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "1fr 1fr 1fr", padding: "clamp(6px,2.2vw,10px)", animation: rolling ? "diceShake .2s infinite" : "none" }}>
+    <div style={{ width: "clamp(44px,13vw,56px)", height: "clamp(44px,13vw,56px)", flexShrink: 0, borderRadius: "14px", background: "linear-gradient(145deg,#1E1E2E,#141420)", border: "1px solid rgba(123,97,255,.3)", boxShadow: "0 6px 14px -4px rgba(0,0,0,.7)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "1fr 1fr 1fr", padding: "clamp(6px,2.2vw,10px)", animation: rolling ? "diceShake .2s infinite" : "none" }}>
       {Array.from({ length: 9 }, (_, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {on.has(i) && <div style={{ width: "62%", height: "62%", borderRadius: "50%", background: "#22150a" }} />}
+          {on.has(i) && <div style={{ width: "62%", height: "62%", borderRadius: "50%", background: "#8B7CFF" }} />}
         </div>
       ))}
     </div>
@@ -198,14 +198,14 @@ function SeatsRow({ pieces, totalSeats, currentSeat, finished }: {
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.32, delay: s * 0.08, ease: [0.22, 1, 0.36, 1] }}
-            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 13px 7px 7px", borderRadius: "999px", background: active ? alpha(COLORS[s], 0.17) : "rgba(255,238,214,.04)", border: `1px solid ${active ? COLORS[s] : "rgba(255,238,214,.08)"}` }}
+            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 13px 7px 7px", borderRadius: "999px", background: active ? alpha(COLORS[s], 0.17) : "rgba(255,255,255,.04)", border: `1px solid ${active ? COLORS[s] : "rgba(255,255,255,.09)"}` }}
           >
-            <div style={{ width: "27px", height: "27px", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.65),${COLORS[s]} 62%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", boxShadow: active ? `0 0 11px ${COLORS[s]}` : "none" }}>
+            <div style={{ width: "27px", height: "27px", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.65),${COLORS[s]} 62%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", boxShadow: active ? `0 0 11px ${COLORS[s]}` : "none" }}>
               {NAMES[s][0]}
             </div>
             <div style={{ lineHeight: 1.15 }}>
-              <span style={{ display: "block", fontSize: "12px", fontWeight: 700, color: active ? "#FBEFE0" : "#A8927C" }}>{NAMES[s]}</span>
-              <span style={{ display: "block", fontSize: "10px", color: atHome === 4 ? "#1FA85C" : onBoard > 0 ? "#F2A916" : "#7d6a58" }}>{subLabel}</span>
+              <span style={{ display: "block", fontSize: "12px", fontWeight: 700, color: active ? "#ECECF2" : "#9C9CB6" }}>{NAMES[s]}</span>
+              <span style={{ display: "block", fontSize: "10px", color: atHome === 4 ? "#34E0C4" : onBoard > 0 ? "#FFB23E" : "#4A4A5C" }}>{subLabel}</span>
             </div>
           </motion.div>
         );
@@ -232,9 +232,9 @@ function PiecesRow({ playerPieces, dice, onMove }: { playerPieces: readonly numb
             transition={{ duration: 0.28, delay: i * 0.06, ease: "easeOut" }}
             whileHover={movable ? { scale: 1.05 } : {}}
             whileTap={movable ? { scale: 0.93 } : {}}
-            style={{ flex: 1, padding: "11px 4px", borderRadius: "13px", cursor: movable ? "pointer" : "default", background: movable ? "linear-gradient(135deg,#F2622E,#EF4B3C)" : "rgba(255,238,214,.05)", color: movable ? "#fff" : "#7d6a58", fontWeight: 700, border: movable ? "none" : "1px solid rgba(255,238,214,.08)", boxShadow: movable ? "0 8px 18px -8px rgba(239,75,60,.8)" : "none", animation: movable ? "glowPulse 1.6s infinite" : "none" }}
+            style={{ flex: 1, padding: "11px 4px", borderRadius: "13px", cursor: movable ? "pointer" : "default", background: movable ? "linear-gradient(135deg,#8B7CFF,#5C6BFF)" : "rgba(255,255,255,.04)", color: movable ? "#fff" : "#4A4A5C", fontWeight: 700, border: movable ? "none" : "1px solid rgba(255,255,255,.08)", boxShadow: movable ? "0 8px 18px -8px rgba(123,97,255,.8)" : "none", animation: movable ? "glowPulse 1.6s infinite" : "none" }}
           >
-            <div style={{ fontSize: "10px", opacity: 0.75, fontWeight: 600 }}>Piece {i + 1}</div>
+            <div style={{ fontSize: "10px", opacity: movable ? 0.75 : 0.4, fontWeight: 600 }}>Piece {i + 1}</div>
             <div style={{ fontSize: "14px", marginTop: "2px" }}>{labels(rel)}</div>
           </motion.button>
         );
@@ -355,8 +355,8 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
     if (wager === 0n) {
       // Free game: no on-chain settlement needed
       const won = gs.playerWon ?? false;
-      if (won) showToast("You won! Great game.", "#1FA85C");
-      else showToast("AI padi wins this round.", "#EF4B3C");
+      if (won) showToast("You won! Great game.", "#34E0C4");
+      else showToast("AI padi wins this round.", "#FF5C8A");
       setTimeout(() => onGameEnd(won), 1200);
       return;
     }
@@ -372,7 +372,7 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
 
   useEffect(() => {
     if (settleError) {
-      showToast("Settlement failed — try again.", "#EF4B3C");
+      showToast("Settlement failed — try again.", "#FF5C8A");
     }
   }, [settleError]);
 
@@ -388,8 +388,8 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
       `0x${string}`, readonly (readonly number[])[], number, number, number, boolean, number, bigint, `0x${string}`
     ];
     const won = winner?.toLowerCase() === address?.toLowerCase();
-    if (won) showToast("You won the wager! 🎉", "#1FA85C");
-    else showToast("AI wins the wager.", "#EF4B3C");
+    if (won) showToast("You won the wager!", "#34E0C4");
+    else showToast("AI wins the wager.", "#FF5C8A");
     onGameEnd(won);
   }, [finalGame, settleSuccess]);
 
@@ -397,8 +397,8 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
   if (!gs) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "200px", gap: "12px" }}>
-        <div style={{ width: "32px", height: "32px", borderRadius: "50%", border: "3px solid rgba(242,169,22,.3)", borderTopColor: "#F2A916", animation: "spin .8s linear infinite" }} />
-        <p style={{ color: "#A8927C", fontSize: "14px" }}>Loading game…</p>
+        <div style={{ width: "32px", height: "32px", borderRadius: "50%", border: "3px solid rgba(139,124,255,.3)", borderTopColor: "#8B7CFF", animation: "spin .8s linear infinite" }} />
+        <p style={{ color: "#74748C", fontSize: "14px" }}>Loading game…</p>
       </div>
     );
   }
@@ -454,7 +454,7 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
   function doMove(pieceIdx: number) {
     if (!canMoveNow || !gs) return;
     const { state: next, valid, captured } = performMove(gs, pieceIdx);
-    if (!valid) { showToast("Can't move that piece.", "#F2A916"); return; }
+    if (!valid) { showToast("Can't move that piece.", "#FFB23E"); return; }
     playerMoves.current.push(pieceIdx);
     saveGame(next);
     setGs(next);
@@ -471,16 +471,16 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <button onClick={onBack} style={{ background: "rgba(255,238,214,.06)", border: "1px solid rgba(247,179,43,.12)", color: "#C9B49C", fontSize: "13px", fontWeight: 600, borderRadius: "999px", padding: "7px 13px", cursor: "pointer" }}>
+        <button onClick={onBack} style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#9C9CB6", fontSize: "13px", fontWeight: 600, borderRadius: "999px", padding: "7px 13px", cursor: "pointer" }}>
           ← Leave
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {wager > 0n && (
-            <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(242,169,22,.13)", border: "1px solid rgba(242,169,22,.3)", borderRadius: "999px", padding: "5px 11px", color: "#F4C95A", fontWeight: 800, fontSize: "12px" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(52,224,196,.1)", border: "1px solid rgba(52,224,196,.28)", borderRadius: "999px", padding: "5px 11px", color: "#34E0C4", fontWeight: 700, fontSize: "12px" }}>
               ★ {(Number(wager) / 1e18).toFixed(2)} USDM
             </span>
           )}
-          <span style={{ color: "#6f5d4c", fontSize: "12px", fontWeight: 600 }}>Game #{gameId.toString()}</span>
+          <span style={{ color: "#4A4A5C", fontSize: "12px", fontWeight: 600 }}>Game #{gameId.toString()}</span>
         </div>
       </div>
 
@@ -503,7 +503,7 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
             transition={{ duration: 0.28, ease: "easeOut" }}
             style={{ display: "flex" }}
           >
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "999px", padding: "5px 14px 5px 5px" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "999px", padding: "5px 14px 5px 5px" }}>
               <span style={{ width: "25px", height: "25px", borderRadius: "50%", background: COLORS[1], display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "11px", fontWeight: 800, boxShadow: `0 0 8px ${COLORS[1]}` }}>
                 C
               </span>
@@ -529,25 +529,25 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, delay: 0.1, ease: "easeOut" }}
-        style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.12)", borderRadius: "18px", padding: "13px 15px" }}
+        style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", borderRadius: "18px", padding: "13px 15px" }}
       >
         <Die face={displayFace} rolling={rolling} />
         <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#FBEFE0", lineHeight: 1.3 }}>{statusText}</p>
+          <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#ECECF2", lineHeight: 1.3 }}>{statusText}</p>
           {!gs.finished && !settling && (
-            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#6f5d4c" }}>No signing needed — one tx at the end</p>
+            <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#4A4A5C" }}>No signing needed — one tx at the end</p>
           )}
         </div>
         {canRollNow ? (
           <motion.button
             onClick={doRoll}
             whileTap={{ scale: 0.93 }}
-            style={{ padding: "14px 22px", border: "none", borderRadius: "14px", background: "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "16px", cursor: "pointer", boxShadow: "0 10px 22px -8px rgba(239,75,60,.8)", animation: "glowPulse 1.8s infinite" }}
+            style={{ padding: "14px 22px", border: "none", borderRadius: "14px", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "16px", cursor: "pointer", boxShadow: "0 10px 22px -8px rgba(123,97,255,.8)", animation: "glowPulse 1.8s infinite" }}
           >
             Roll
           </motion.button>
         ) : (
-          <div style={{ padding: "14px 18px", borderRadius: "14px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.1)", color: "#7d6a58", fontWeight: 700, fontSize: "13px" }}>
+          <div style={{ padding: "14px 18px", borderRadius: "14px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "#4A4A5C", fontWeight: 700, fontSize: "13px" }}>
             {rolling ? "…" : canMoveNow ? "Pick" : settling ? "⏳" : "Wait"}
           </div>
         )}
@@ -562,7 +562,7 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
           >
-            <p style={{ margin: "0 0 8px", color: "#8c7866", fontSize: "12px", fontWeight: 600 }}>Tap a glowing piece — on the board or below</p>
+            <p style={{ margin: "0 0 8px", color: "#74748C", fontSize: "12px", fontWeight: 600 }}>Tap a glowing piece — on the board or below</p>
             <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} onMove={doMove} />
           </motion.div>
         )}
@@ -575,23 +575,23 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          style={{ borderRadius: "20px", padding: "20px", textAlign: "center", background: gs.playerWon ? "rgba(31,168,92,.12)" : "rgba(239,75,60,.1)", border: `1px solid ${gs.playerWon ? "rgba(31,168,92,.4)" : "rgba(239,75,60,.3)"}` }}
+          style={{ borderRadius: "20px", padding: "20px", textAlign: "center", background: gs.playerWon ? "rgba(52,224,196,.1)" : "rgba(255,92,138,.1)", border: `1px solid ${gs.playerWon ? "rgba(52,224,196,.32)" : "rgba(255,92,138,.28)"}` }}
         >
           {settling ? (
             <>
-              <p style={{ margin: "0 0 6px", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "20px", color: "#F4C95A" }}>
+              <p style={{ margin: "0 0 6px", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "20px", color: "#34E0C4" }}>
                 {gs.playerWon ? "You won! Settling wager…" : "Game over. Settling wager…"}
               </p>
-              <p style={{ margin: 0, color: "#8c7866", fontSize: "13px" }}>
+              <p style={{ margin: 0, color: "#74748C", fontSize: "13px" }}>
                 {settleSubmitting ? "Check your wallet to sign." : "Waiting for confirmation…"}
               </p>
             </>
           ) : wager === 0n ? (
             <>
-              <p style={{ margin: "0 0 4px", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "22px", color: gs.playerWon ? "#5BD08A" : "#EF4B3C" }}>
-                {gs.playerWon ? "You won! 🎉" : "AI padi wins"}
+              <p style={{ margin: "0 0 4px", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "22px", color: gs.playerWon ? "#34E0C4" : "#FF5C8A" }}>
+                {gs.playerWon ? "You won!" : "AI padi wins"}
               </p>
-              <button onClick={onBack} style={{ marginTop: "14px", background: "rgba(255,238,214,.08)", border: "1px solid rgba(247,179,43,.18)", borderRadius: "999px", padding: "10px 20px", color: "#D8C4AC", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>
+              <button onClick={onBack} style={{ marginTop: "14px", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "999px", padding: "10px 20px", color: "#C5C5D8", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>
                 Back to lobby
               </button>
             </>

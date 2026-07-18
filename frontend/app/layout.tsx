@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
+import { Space_Grotesk, Manrope } from "next/font/google";
 
-const bricolage = Bricolage_Grotesque({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-  variable: "--font-bricolage",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-space",
   display: "swap",
 });
 
-const hanken = Hanken_Grotesk({
+const manrope = Manrope({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-hanken",
+  variable: "--font-manrope",
   display: "swap",
 });
 
@@ -34,7 +34,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${hanken.variable}`}>
+    <html lang="en" className={`${spaceGrotesk.variable} ${manrope.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>

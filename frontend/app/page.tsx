@@ -9,280 +9,412 @@ import GameBoard from "@/components/GameBoard";
 import Leaderboard from "@/components/Leaderboard";
 import PvPGameBoard, { type PvpMeta } from "@/components/PvPGameBoard";
 
-const fadeUp   = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
-const fadeIn   = { initial: { opacity: 0 },         animate: { opacity: 1 } };
-const scaleIn  = { initial: { opacity: 0, scale: 0.88 }, animate: { opacity: 1, scale: 1 } };
-const slideLeft = { initial: { opacity: 0, x: -16 }, animate: { opacity: 1, x: 0 } };
+type Screen = "onboarding" | "lobby" | "game" | "pvp" | "ranks" | "matchmaking";
+type Overlay = null | "win" | "lose" | "daily" | "cowries" | "profile" | "room";
 
-type Screen = "onboarding" | "lobby" | "game" | "pvp" | "ranks";
-type Overlay = null | "win" | "lose" | "daily";
-
-interface ToastState { text: string; color: string; }
+interface ToastState { text: string; color: string }
 
 const DAILY_REWARDS = [20, 40, 60, 80, 120, 160, 300];
+const COLORS = ["#34E0C4", "#8B7CFF", "#FF5C8A", "#FFB23E"];
 
-const COLORS = ["#EF4B3C", "#1FA85C", "#3D6BFF", "#F2A916"];
-
-function alpha(hex: string, a: number) {
-  return hex + Math.round(a * 255).toString(16).padStart(2, "0");
+/* ── Background orbs + grid ─────────────────────────────────────── */
+function BgLayer() {
+  return (
+    <>
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: "#07070C" }} />
+      <div style={{ position: "fixed", top: "-10%", left: "10%", width: "46vw", height: "46vw", maxWidth: 640, maxHeight: 640, zIndex: 0, pointerEvents: "none", background: "radial-gradient(circle,rgba(123,97,255,.2),transparent 62%)", filter: "blur(20px)", animation: "orbDrift1 14s ease-in-out infinite" }} />
+      <div style={{ position: "fixed", top: "0%", right: "6%", width: "38vw", height: "38vw", maxWidth: 520, maxHeight: 520, zIndex: 0, pointerEvents: "none", background: "radial-gradient(circle,rgba(52,224,196,.14),transparent 60%)", filter: "blur(20px)", animation: "orbDrift2 18s ease-in-out infinite" }} />
+      <div style={{ position: "fixed", bottom: "-8%", left: "40%", width: "40vw", height: "40vw", maxWidth: 560, maxHeight: 560, zIndex: 0, pointerEvents: "none", background: "radial-gradient(circle,rgba(255,92,138,.1),transparent 62%)", filter: "blur(20px)", animation: "orbDrift3 20s ease-in-out infinite" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: .45, backgroundImage: "linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px)", backgroundSize: "46px 46px" }} />
+    </>
+  );
 }
 
-/* ─── Landing Page ───────────────────────────────────────────────── */
-function LandingPage({ onConnect, isConnecting, isMiniPay }: { onConnect: () => void; isConnecting: boolean; isMiniPay: boolean }) {
-  return (
-    <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-      {/* Background glows */}
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse 80% 40% at 50% 0%,rgba(239,75,60,.18),transparent 60%),radial-gradient(circle at 15% 60%,rgba(242,169,22,.1),transparent 36%),radial-gradient(circle at 90% 40%,rgba(61,107,255,.1),transparent 36%)", pointerEvents: "none" }} />
-
-      {/* Top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px clamp(16px,5vw,28px) 0", position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "5px" }}>
-          <span style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "28px", letterSpacing: "-1.2px", color: "#FBEFE0" }}>padi</span>
-          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "5px", boxShadow: "0 0 10px #EF4B3C", display: "inline-block" }} />
+/* ── Mini demo board for hero ────────────────────────────────────── */
+function HeroBoard() {
+  const DEMO_PIECES = [
+    { seat: 0, col: 7, row: 9 }, { seat: 0, col: 6, row: 8 },
+    { seat: 1, col: 8, row: 5 }, { seat: 1, col: 9, row: 8 },
+    { seat: 2, col: 5, row: 6 }, { seat: 3, col: 7, row: 11 },
+  ];
+  const cells: React.ReactNode[] = [];
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
+      const inCenter = r >= 6 && r <= 8 && c >= 6 && c <= 8;
+      const isPath = !inCenter && ((r === 7 && c >= 0 && c <= 14) || (c === 7 && r >= 0 && r <= 14));
+      let bg = "rgba(255,255,255,.045)";
+      if (inCenter) bg = c === 7 && r === 7 ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.06)";
+      else if (isPath) bg = "rgba(255,255,255,.1)";
+      else if (r >= 9 && c <= 5) bg = "rgba(52,224,196,.2)";
+      else if (r <= 5 && c >= 9) bg = "rgba(139,124,255,.2)";
+      else if (r <= 5 && c <= 5) bg = "rgba(255,178,62,.2)";
+      else if (r >= 9 && c >= 9) bg = "rgba(255,92,138,.2)";
+      const piece = DEMO_PIECES.find(p => p.col === c && p.row === r);
+      cells.push(
+        <div key={`${c},${r}`} style={{ background: bg, borderRadius: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {piece && <div style={{ width: "70%", height: "70%", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.8),${COLORS[piece.seat]} 62%)`, boxShadow: `0 2px 6px ${COLORS[piece.seat]}88` }} />}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(31,168,92,.12)", border: "1px solid rgba(31,168,92,.3)", borderRadius: "999px", padding: "5px 12px" }}>
-          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#1FA85C", display: "inline-block" }} />
-          <span style={{ color: "#6FA582", fontWeight: 700, fontSize: "11px" }}>Celo Mainnet</span>
+      );
+    }
+  }
+  return (
+    <div style={{ width: "100%", aspectRatio: "1/1", display: "grid", gridTemplateColumns: "repeat(15,1fr)", gridTemplateRows: "repeat(15,1fr)", gap: 1, padding: 6, background: "#0B0B14", borderRadius: 14, border: "1px solid rgba(255,255,255,.08)" }}>
+      {cells}
+    </div>
+  );
+}
+
+/* ── Landing Page ────────────────────────────────────────────────── */
+function LandingPage({ onConnect, onGuest, isConnecting }: { onConnect: () => void; onGuest: () => void; isConnecting: boolean }) {
+  function scrollTo(id: string) {
+    const el = document.getElementById(id);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: "smooth" });
+  }
+  const connectBtn = (big: boolean) => (
+    <motion.button onClick={onConnect} disabled={isConnecting} whileTap={isConnecting ? {} : { scale: 0.97 }}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9, padding: big ? "15px 28px" : "10px 18px", borderRadius: big ? 13 : 11, border: "none", cursor: isConnecting ? "default" : "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: big ? 16 : 14, boxShadow: "0 12px 30px -10px rgba(123,97,255,.7)", animation: big && !isConnecting ? "glowPulse 2.8s infinite" : "none" }}>
+      {isConnecting ? <><span style={{ width: 15, height: 15, borderRadius: "50%", border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block" }} />Connecting…</> : isConnecting ? "Connecting…" : "Connect Wallet"}
+    </motion.button>
+  );
+
+  return (
+    <div style={{ position: "relative", minHeight: "100dvh", width: "100%", overflowX: "hidden" }}>
+      {/* Sticky nav */}
+      <div style={{ position: "sticky", top: 0, zIndex: 20, backdropFilter: "blur(16px)", background: "rgba(7,7,12,.72)", borderBottom: "1px solid rgba(255,255,255,.07)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "13px clamp(16px,4vw,40px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#7B61FF", boxShadow: "0 0 14px #7B61FF", display: "inline-block" }} />
+            <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 21, letterSpacing: "-.5px" }}>padi</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            {["how-it-works", "your-padis", "prizes"].map((id, i) => (
+              <button key={id} onClick={() => scrollTo(id)} style={{ background: "none", border: "none", color: "#A6A6BE", fontFamily: "var(--font-manrope),'Manrope',sans-serif", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "none" }} className={`desktop-nav-${i}`}>{["How it works", "Your padis", "Prizes"][i]}</button>
+            ))}
+            {connectBtn(false)}
+          </div>
         </div>
       </div>
 
       {/* Hero */}
-      <div className="landing-hero" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "clamp(20px,5vw,30px) clamp(16px,5vw,28px) 0", textAlign: "center", position: "relative", gap: "8px" }}>
-        {/* Colour circles — visual hint of Ludo pieces */}
-        <motion.div {...fadeIn} transition={{ duration: 0.5 }} style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
-          {["#EF4B3C","#1FA85C","#3D6BFF","#F2A916"].map((c, i) => (
-            <div key={i} style={{ width: "18px", height: "18px", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.7),${c} 65%)`, boxShadow: `0 0 12px ${c}88`, animation: `floaty ${2.6 + i * 0.4}s ease-in-out ${i * 0.3}s infinite` }} />
-          ))}
-        </motion.div>
-
-        <motion.h1 className="hero-h1" {...fadeUp} transition={{ duration: 0.55, ease: "easeOut" }} style={{ fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "clamp(46px,15vw,72px)", lineHeight: 0.9, letterSpacing: "clamp(-2px,-0.05em,-3px)", color: "#FBEFE0", margin: 0 }}>
-          padi
-        </motion.h1>
-        <motion.p {...fadeUp} transition={{ duration: 0.5, delay: 0.12, ease: "easeOut" }} style={{ color: "#F2A916", fontWeight: 700, fontSize: "clamp(12px,3.5vw,14px)", letterSpacing: "2.5px", textTransform: "uppercase", margin: "10px 0 0" }}>On-chain Ludo on Celo</motion.p>
-        <motion.p {...fadeUp} transition={{ duration: 0.5, delay: 0.22, ease: "easeOut" }} style={{ color: "#A8927C", fontSize: "clamp(13px,3.8vw,15px)", lineHeight: 1.6, maxWidth: "min(290px, 85vw)", margin: "12px 0 0" }}>
-          Roll the dice. Chase your AI <span style={{ color: "#FBEFE0", fontWeight: 600 }}>padis</span> off the board. Win real USDM — zero signatures during play.
-        </motion.p>
-      </div>
-
-      {/* Feature cards */}
-      <div style={{ padding: "28px clamp(16px,5vw,28px) 0", display: "flex", flexDirection: "column", gap: "10px", position: "relative" }}>
-        {[
-          { dot: "#EF4B3C", title: "Play vs up to 3 AI padis", sub: "Chidi, Amaka & Tunde — each with a personality" },
-          { dot: "#F2A916", title: "Wager USDM, win 99%", sub: "One signature to start, one to settle. That's it." },
-          { dot: "#1FA85C", title: "Daily streaks & prize pool", sub: "Show up every day, stack cowries & climb the ranks" },
-        ].map((f, i) => (
-          <motion.div key={i} {...fadeUp} transition={{ duration: 0.4, delay: 0.32 + i * 0.09, ease: "easeOut" }} style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,238,214,.04)", border: "1px solid rgba(247,179,43,.1)", borderRadius: "14px", padding: "12px 14px" }}>
-            <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: f.dot, boxShadow: `0 0 8px ${f.dot}`, flexShrink: 0 }} />
-            <div>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: "14px", color: "#FBEFE0" }}>{f.title}</p>
-              <p style={{ margin: "2px 0 0", color: "#7d6a58", fontSize: "12px" }}>{f.sub}</p>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(40px,7vw,86px) clamp(16px,4vw,40px) clamp(28px,5vw,56px)", display: "flex", flexWrap: "wrap", gap: "clamp(28px,5vw,60px)", alignItems: "center" }}>
+        <div style={{ flex: "1 1 360px", minWidth: 290 }}>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 999, padding: "6px 14px", marginBottom: 22 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34E0C4", boxShadow: "0 0 8px #34E0C4", animation: "shimmer 1.6s infinite", display: "inline-block" }} />
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", color: "#B9B9D0" }}>ON-CHAIN LUDO · BUILT ON CELO</span>
+          </motion.div>
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.08 }}
+            style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(38px,6.4vw,70px)", lineHeight: 1.02, letterSpacing: -2, margin: 0, color: "#ECECF2" }}>
+            Roll the dice.<br />Beat your padi.<br />
+            <span style={{ background: "linear-gradient(120deg,#34E0C4,#7B61FF 60%,#FF5C8A)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Win crypto.</span>
+          </motion.h1>
+          <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.16 }}
+            style={{ color: "#9C9CB6", fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.6, margin: "22px 0 30px", maxWidth: "min(480px,100%)" }}>
+            The classic board game, reimagined on-chain. Take on a crew of AI padis with real personalities, race your tokens home, and win a share of the weekly USDM pot.
+          </motion.p>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.24 }}
+            style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+            {connectBtn(true)}
+            <motion.button onClick={onGuest} whileTap={{ scale: 0.97 }}
+              style={{ padding: "15px 24px", borderRadius: 13, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.13)", color: "#ECECF2", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 16, cursor: "pointer" }}>
+              Play as guest
+            </motion.button>
+          </motion.div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.36 }}
+            style={{ display: "flex", flexWrap: "wrap", gap: 18, marginTop: 26, color: "#74748C", fontSize: 13, fontWeight: 500 }}>
+            {["Free to play", "Optional USDM stakes", "Non-custodial"].map(t => (
+              <span key={t} style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: "#34E0C4" }}>✓</span>{t}</span>
+            ))}
+          </motion.div>
+        </div>
+        <div style={{ flex: "1 1 360px", minWidth: 280, display: "flex", justifyContent: "center" }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
+            style={{ width: "100%", maxWidth: 392, position: "relative", animation: "floaty 7s ease-in-out .8s infinite" }}>
+            <div style={{ position: "absolute", inset: "-12% -8%", background: "radial-gradient(circle,rgba(123,97,255,.32),transparent 65%)", filter: "blur(20px)" }} />
+            <div style={{ position: "relative", padding: 18, borderRadius: 26, background: "linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02))", border: "1px solid rgba(255,255,255,.12)", boxShadow: "0 40px 90px -30px rgba(0,0,0,.8)", backdropFilter: "blur(8px)" }}>
+              <HeroBoard />
+            </div>
+            <div style={{ position: "absolute", top: -16, right: -6, display: "flex", alignItems: "center", gap: 7, background: "rgba(12,12,20,.92)", border: "1px solid rgba(52,224,196,.4)", borderRadius: 12, padding: "9px 13px", boxShadow: "0 12px 30px -10px #000" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34E0C4", boxShadow: "0 0 9px #34E0C4", animation: "shimmer 1.6s infinite", display: "inline-block" }} />
+              <div style={{ lineHeight: 1.1 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".8px", color: "#6FE6CF" }}>LIVE POT</div>
+                <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, color: "#fff" }}>482.5 USDM</div>
+              </div>
+            </div>
+            <div style={{ position: "absolute", bottom: -14, left: -6, display: "flex", alignItems: "center", gap: 8, background: "rgba(12,12,20,.92)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: "8px 13px", boxShadow: "0 12px 30px -10px #000" }}>
+              <span style={{ width: 24, height: 24, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff,#8B7CFF 62%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#fff", flexShrink: 0 }}>C</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#C5C5D8" }}>Chidi just won 18 USDM</span>
             </div>
           </motion.div>
-        ))}
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "8px clamp(16px,4vw,40px) clamp(34px,5vw,64px)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, background: "rgba(255,255,255,.035)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 20, padding: "clamp(18px,3vw,28px)" }}>
+          {[["482.5", "USDM in this week's pot"], ["12,480", "Players"], ["86,200", "Games played"], ["41.6k", "USDM paid out"]].map(([val, label]) => (
+            <div key={label} style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(24px,3.4vw,34px)", color: "#34E0C4" }}>{val}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#74748C", marginTop: 3 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How it works */}
+      <div id="how-it-works" style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(34px,5vw,64px) clamp(16px,4vw,40px)" }}>
+        <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: "1.5px", color: "#7B61FF", margin: "0 0 8px" }}>HOW IT WORKS</p>
+        <h2 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(26px,3.6vw,40px)", letterSpacing: -1, margin: "0 0 30px" }}>Three steps to the pot</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 16 }}>
+          {[
+            { n: 1, c: "#8B7CFF", bg: "rgba(123,97,255,.16)", bc: "rgba(123,97,255,.34)", title: "Connect your wallet", sub: "Link any Celo-compatible wallet in a tap. Non-custodial — you always hold your own keys." },
+            { n: 2, c: "#5FE7D0", bg: "rgba(52,224,196,.14)", bc: "rgba(52,224,196,.34)", title: "Pick padis & stake", sub: "Choose 1–3 AI opponents. Play free for cowries, or stake USDM to play for the real pot." },
+            { n: 3, c: "#FF87AC", bg: "rgba(255,92,138,.14)", bc: "rgba(255,92,138,.34)", title: "Race home & win", sub: "Get all four tokens home first to win the round, bank cowries, and climb the weekly leaderboard." },
+          ].map(({ n, c, bg, bc, title, sub }) => (
+            <div key={n} style={{ background: "linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02))", border: "1px solid rgba(255,255,255,.09)", borderRadius: 20, padding: 26 }}>
+              <div style={{ width: 46, height: 46, borderRadius: 13, background: bg, border: `1px solid ${bc}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 20, color: c, marginBottom: 18 }}>{n}</div>
+              <h3 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 19, margin: "0 0 8px" }}>{title}</h3>
+              <p style={{ color: "#9C9CB6", fontSize: 14, lineHeight: 1.55, margin: 0 }}>{sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Meet your padis */}
+      <div id="your-padis" style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(20px,3vw,40px) clamp(16px,4vw,40px) clamp(34px,5vw,64px)" }}>
+        <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: "1.5px", color: "#34E0C4", margin: "0 0 8px" }}>YOUR OPPONENTS</p>
+        <h2 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(26px,3.6vw,40px)", letterSpacing: -1, margin: "0 0 30px" }}>Meet your padis</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
+          {[
+            { name: "Chidi", title: "The Strategist", color: "#8B7CFF", sub: "Patient and calculating. Plays the long game and rarely leaves a token exposed.", dots: [1, 1, 0] },
+            { name: "Amaka", title: "The Aggressor", color: "#FF5C8A", sub: "Lives for the capture. If your token is in reach, she's coming for it — every time.", dots: [1, 1, 1] },
+            { name: "Tunde", title: "The Trickster", color: "#FFB23E", sub: "Wildly unpredictable. Sometimes reckless, sometimes brilliant — never boring.", dots: [1, 0, 0] },
+          ].map(({ name, title, color, sub, dots }) => (
+            <div key={name} style={{ background: "rgba(255,255,255,.035)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 20, padding: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>
+                <span style={{ width: 50, height: 50, borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,#fff,${color} 60%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-space)", fontWeight: 700, fontSize: 20, color: "#fff", boxShadow: `0 0 18px ${color}88`, flexShrink: 0 }}>{name[0]}</span>
+                <div>
+                  <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 18 }}>{name}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color }}>{title}</div>
+                </div>
+              </div>
+              <p style={{ color: "#9C9CB6", fontSize: 14, lineHeight: 1.55, margin: "0 0 14px" }}>{sub}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ fontSize: 11, color: "#74748C", fontWeight: 600 }}>DIFFICULTY</span>
+                <span style={{ display: "flex", gap: 4 }}>
+                  {dots.map((on, i) => <span key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: on ? color : "rgba(255,255,255,.14)", display: "inline-block" }} />)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Prize pool */}
+      <div id="prizes" style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(20px,3vw,40px) clamp(16px,4vw,40px) clamp(40px,6vw,72px)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, background: "linear-gradient(135deg,rgba(123,97,255,.14),rgba(52,224,196,.08))", border: "1px solid rgba(255,255,255,.12)", borderRadius: 26, padding: "clamp(26px,4vw,44px)", alignItems: "center" }}>
+          <div style={{ flex: "1 1 280px" }}>
+            <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: "1.5px", color: "#6FE6CF", margin: "0 0 8px" }}>WEEKLY PRIZE POOL</p>
+            <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(40px,7vw,68px)", lineHeight: 1, letterSpacing: -2 }}>482.5 <span style={{ fontSize: ".4em", color: "#9C9CB6" }}>USDM</span></div>
+            <p style={{ color: "#9C9CB6", fontSize: 15, lineHeight: 1.55, margin: "16px 0 22px", maxWidth: 420 }}>Every staked game feeds the pot. Top of the leaderboard takes 60% when the week resets — climb the ranks and cash in.</p>
+            {connectBtn(true)}
+          </div>
+          <div style={{ flex: "1 1 260px", background: "rgba(7,7,12,.5)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 18, padding: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>Top padis this week</span>
+              <span style={{ fontSize: 12, color: "#74748C" }}>3d 14h left</span>
+            </div>
+            {[["Bisi", "289 USDM"], ["Emeka", "97 USDM"], ["Ngozi", "48 USDM"]].map(([name, prize], i) => (
+              <div key={name} style={{ display: "flex", alignItems: "center", gap: 11, padding: "9px 4px", borderBottom: i < 2 ? "1px solid rgba(255,255,255,.06)" : "none" }}>
+                <span style={{ width: 18, fontFamily: "var(--font-space)", fontWeight: 700, fontSize: 14, color: ["#FFB23E", "#C5C5D8", "#E0894A"][i] }}>{i + 1}</span>
+                <span style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,.1)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12 }}>{name[0]}</span>
+                <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{name}</span>
+                <span style={{ fontWeight: 700, fontSize: 13, color: "#34E0C4" }}>{prize}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* CTA */}
-      <motion.div {...fadeUp} transition={{ duration: 0.4, delay: 0.58, ease: "easeOut" }} style={{ padding: "24px clamp(16px,5vw,28px) max(28px,env(safe-area-inset-bottom,36px))", position: "relative" }}>
-        {isMiniPay ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "9px", padding: "16px", background: "rgba(31,168,92,.12)", border: "1px solid rgba(31,168,92,.3)", borderRadius: "18px" }}>
-            <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 9px #1FA85C", display: "inline-block", animation: "floaty 2s ease-in-out infinite" }} />
-            <span style={{ color: "#8FB99B", fontWeight: 700, fontSize: "15px" }}>Connecting MiniPay…</span>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 clamp(16px,4vw,40px) clamp(40px,6vw,72px)" }}>
+        <div style={{ textAlign: "center", background: "rgba(255,255,255,.035)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 26, padding: "clamp(36px,6vw,64px) 24px" }}>
+          <h2 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(28px,4.4vw,48px)", letterSpacing: -1.5, margin: "0 0 14px" }}>Ready to play your padi?</h2>
+          <p style={{ color: "#9C9CB6", fontSize: 16, margin: "0 auto 26px", maxWidth: 440, lineHeight: 1.55 }}>Connect your wallet and jump into a game in seconds. Free to start, real stakes when you're ready.</p>
+          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12 }}>
+            {connectBtn(true)}
+            <motion.button onClick={onGuest} whileTap={{ scale: 0.97 }} style={{ padding: "15px 24px", borderRadius: 13, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.13)", color: "#ECECF2", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 16, cursor: "pointer" }}>Play as guest</motion.button>
           </div>
-        ) : (
-          <motion.button
-            onClick={onConnect}
-            disabled={isConnecting}
-            whileTap={isConnecting ? {} : { scale: 0.97 }}
-            style={{ width: "100%", padding: "18px", border: "none", borderRadius: "18px", background: isConnecting ? "rgba(239,75,60,.45)" : "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage),'Bricolage Grotesque',sans-serif", fontWeight: 800, fontSize: "18px", letterSpacing: ".3px", cursor: isConnecting ? "default" : "pointer", animation: isConnecting ? "none" : "glowPulse 2.8s ease-in-out infinite", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", boxShadow: "0 18px 40px -14px rgba(239,75,60,.6)" }}>
-            {isConnecting ? (
-              <>
-                <span style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2.5px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block", flexShrink: 0 }} />
-                Connecting…
-              </>
-            ) : (
-              <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
-                Connect Wallet
-              </>
-            )}
-          </motion.button>
-        )}
-        <p style={{ textAlign: "center", color: "#5a4a3a", fontSize: "11px", margin: "12px 0 0" }}>Free to play · Optional USDM wagers · Fully on-chain</p>
-      </motion.div>
-    </div>
-  );
-}
-
-/* ─── App Bar ─────────────────────────────────────────────────────── */
-function AppBar({ address, cowries, streak, onDisconnect }: { address?: string; cowries: number; streak: number; onDisconnect: () => void }) {
-  const { disconnect } = useDisconnect();
-  const [showDisconnect, setShowDisconnect] = useState(false);
-
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px clamp(14px,4.5vw,22px) 10px", position: "relative" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
-        <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "clamp(20px,6vw,26px)", letterSpacing: "-1px", color: "#FBEFE0" }}>padi</span>
-        <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#EF4B3C", marginBottom: "5px", boxShadow: "0 0 8px #EF4B3C", display: "inline-block", animation: "redDot 2.8s ease-in-out infinite" }} />
+        </div>
       </div>
-      <div className="appbar-inner" style={{ display: "flex", gap: "7px", alignItems: "center", flexWrap: "nowrap", minWidth: 0 }}>
-        {/* Streak */}
-        <motion.div whileHover={{ y: -1 }} style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(242,169,22,.13)", border: "1px solid rgba(242,169,22,.3)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
-          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#F2A916", boxShadow: "0 0 8px #F2A916", display: "inline-block", animation: "goldDot 3s ease-in-out infinite" }} />
-          <span style={{ color: "#F2A916", fontWeight: 800, fontSize: "12px" }}>{streak}</span>
-          <span style={{ color: "#C99A2E", fontWeight: 600, fontSize: "11px" }}>day</span>
-        </motion.div>
-        {/* Cowries */}
-        <motion.div whileHover={{ y: -1 }} style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.14)", borderRadius: "999px", padding: "5px 10px", flexShrink: 0 }}>
-          <span style={{ width: "12px", height: "12px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", display: "inline-block", flexShrink: 0 }} />
-          <span className="appbar-cowries-text" style={{ color: "#F4D8A8", fontWeight: 800, fontSize: "12px" }}>{cowries.toLocaleString()}</span>
-        </motion.div>
-        {/* Wallet chip → tapping shows disconnect */}
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          <button
-            onClick={() => setShowDisconnect(v => !v)}
-            style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(255,238,214,.05)", border: "1px solid rgba(247,179,43,.18)", borderRadius: "999px", padding: "5px 10px", cursor: "pointer" }}>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#1FA85C", boxShadow: "0 0 6px #1FA85C", display: "inline-block", flexShrink: 0, animation: "connectedPulse 2.5s ease-in-out infinite" }} />
-            <span style={{ color: "#A8927C", fontWeight: 600, fontSize: "11px" }}>
-              {address ? `${address.slice(0, 4)}…${address.slice(-3)}` : "●●"}
-            </span>
-          </button>
-          {/* Disconnect dropdown */}
-          {showDisconnect && (
-            <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 40, background: "#1e1108", border: "1px solid rgba(247,179,43,.2)", borderRadius: "14px", padding: "6px", minWidth: "160px", boxShadow: "0 16px 36px -12px #000" }}>
-              {address && (
-                <div style={{ padding: "8px 12px 6px", borderBottom: "1px solid rgba(255,238,214,.07)", marginBottom: "4px" }}>
-                  <p style={{ margin: 0, color: "#6f5d4c", fontSize: "10px", fontWeight: 600 }}>CONNECTED AS</p>
-                  <p style={{ margin: "2px 0 0", color: "#A8927C", fontSize: "12px", fontWeight: 600, wordBreak: "break-all" }}>{address.slice(0, 10)}…{address.slice(-6)}</p>
-                </div>
-              )}
-              <button
-                onClick={() => { disconnect(); setShowDisconnect(false); onDisconnect(); }}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: "9px", padding: "10px 12px", borderRadius: "10px", background: "rgba(239,75,60,.1)", border: "1px solid rgba(239,75,60,.2)", color: "#EF4B3C", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Disconnect Wallet
-              </button>
-            </div>
-          )}
+
+      {/* Footer */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,.07)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px clamp(16px,4vw,40px)", display: "flex", flexWrap: "wrap", gap: 14, alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#7B61FF", display: "inline-block" }} />
+            <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16 }}>padi</span>
+            <span style={{ color: "#74748C", fontSize: 13, marginLeft: 6 }}>Ludo, on-chain.</span>
+          </div>
+          <div style={{ display: "flex", gap: 20, color: "#74748C", fontSize: 13, fontWeight: 500 }}>
+            <span>Built on Celo</span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Bottom Nav ─────────────────────────────────────────────────── */
-function BottomNav({ screen, onNavigate }: { screen: Screen; onNavigate: (to: "lobby" | "daily" | "ranks") => void }) {
-  const tabs: Array<{ id: "lobby" | "daily" | "ranks"; label: string; shape: React.CSSProperties }> = [
-    { id: "lobby", label: "Home", shape: { borderRadius: "6px" } },
-    { id: "daily", label: "Rewards", shape: { borderRadius: "50%" } },
-    { id: "ranks", label: "Ranks", shape: { borderRadius: "3px", transform: "rotate(45deg)" } },
-  ];
+/* ── App Bar ─────────────────────────────────────────────────────── */
+function AppBar({ address, cowries, dailyClaimed, screen, onLogoClick, onLeaderboard, onCowriesClick, onProfile }: {
+  address?: string; cowries: number; dailyClaimed: boolean; screen: Screen;
+  onLogoClick: () => void; onLeaderboard: () => void; onCowriesClick: () => void; onProfile: () => void;
+}) {
   return (
-    <div style={{ display: "flex", flexShrink: 0, background: "rgba(18,11,5,.94)", backdropFilter: "blur(12px)", borderTop: "1px solid rgba(247,179,43,.13)", padding: `10px clamp(20px,8vw,40px) max(16px,env(safe-area-inset-bottom,16px))`, zIndex: 30 }}>
-      {tabs.map(({ id, label, shape }) => {
-        const active = screen === id;
-        return (
-          <motion.button key={id} onClick={() => onNavigate(id)} whileHover={{ y: -2 }} whileTap={{ scale: 0.88 }} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
-            <motion.div animate={{ borderColor: active ? "#EF4B3C" : "#8c7866", scale: active ? 1.1 : 1 }} transition={{ duration: 0.22 }} style={{ width: "20px", height: "20px", border: `2.5px solid ${active ? "#EF4B3C" : "#8c7866"}`, ...shape }} />
-            <motion.span animate={{ color: active ? "#EF4B3C" : "#8c7866" }} transition={{ duration: 0.22 }} style={{ fontSize: "10px", fontWeight: 700 }}>{label}</motion.span>
-          </motion.button>
-        );
-      })}
+    <div style={{ position: "sticky", top: 0, zIndex: 20, backdropFilter: "blur(16px)", background: "rgba(7,7,12,.72)", borderBottom: "1px solid rgba(255,255,255,.07)", flexShrink: 0 }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "12px clamp(16px,4vw,40px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <button onClick={onLogoClick} style={{ display: "flex", alignItems: "center", gap: 9, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+          <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#7B61FF", boxShadow: "0 0 14px #7B61FF", display: "inline-block" }} />
+          <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: "-.5px", color: "#ECECF2" }}>padi</span>
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <button onClick={onLeaderboard} style={{ background: screen === "ranks" ? "rgba(123,97,255,.16)" : "rgba(255,255,255,.05)", border: `1px solid ${screen === "ranks" ? "rgba(123,97,255,.4)" : "rgba(255,255,255,.1)"}`, color: "#ECECF2", fontFamily: "var(--font-manrope),'Manrope',sans-serif", fontWeight: 600, fontSize: 13, borderRadius: 10, padding: "8px 14px", cursor: "pointer" }}>Leaderboard</button>
+          <button onClick={onCowriesClick} style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 11, padding: "6px 12px", cursor: "pointer" }}>
+            <span style={{ width: 14, height: 14, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff,#34E0C4 62%)", display: "inline-block", flexShrink: 0 }} />
+            <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 13, color: "#34E0C4" }}>{cowries.toLocaleString()}</span>
+            {!dailyClaimed && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#FFB23E", boxShadow: "0 0 7px #FFB23E", animation: "badgePulse 1.4s infinite", marginLeft: 2, display: "inline-block" }} />}
+          </button>
+          <button onClick={onProfile} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 11, padding: "6px 12px", cursor: "pointer" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34E0C4", boxShadow: "0 0 7px #34E0C4", display: "inline-block" }} />
+            <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 13, color: "#C5C5D8", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "Guest"}
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ─── Win / Lose Overlay ─────────────────────────────────────────── */
+/* ── Win/Lose Overlay ────────────────────────────────────────────── */
 function WinOverlay({ won, lastReward, onPlayAgain, onClose }: { won: boolean; lastReward: number; onPlayAgain: () => void; onClose: () => void }) {
-  const confetti = Array.from({ length: 42 }, (_, i) => {
-    const left = Math.random() * 100;
-    const delay = Math.random() * 0.7;
-    const dur = 2.4 + Math.random() * 1.7;
-    const sz = 6 + Math.random() * 8;
-    return (
-      <div key={i} style={{ position: "absolute", top: "-20px", left: `${left}%`, width: `${sz}px`, height: `${sz * 0.62}px`, background: COLORS[i % COLORS.length], borderRadius: "2px", animation: `confettiFall ${dur}s linear ${delay}s infinite`, opacity: 0.92 }} />
-    );
+  const confetti = Array.from({ length: 46 }, (_, i) => {
+    const cols = ["#34E0C4", "#8B7CFF", "#FF5C8A", "#FFB23E", "#5C6BFF"];
+    return <div key={i} style={{ position: "absolute", top: -20, left: `${Math.random() * 100}%`, width: `${6 + Math.random() * 8}px`, height: `${(6 + Math.random() * 8) * .62}px`, background: cols[i % cols.length], borderRadius: 2, animation: `confettiFall ${2.4 + Math.random() * 1.8}s linear ${Math.random() * .7}s infinite`, opacity: .92 }} />;
   });
-
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(8,5,2,.8)", backdropFilter: "blur(7px)", padding: "24px" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(5,5,9,.82)", backdropFilter: "blur(8px)", padding: 24 }}>
       {won && <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>{confetti}</div>}
-      <motion.div initial={{ opacity: 0, scale: 0.82 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }} style={{ position: "relative", width: "100%", maxWidth: "370px", background: "linear-gradient(180deg,#2a1a10,#1a0f07)", border: "1px solid rgba(247,179,43,.2)", borderRadius: "26px", padding: "32px 24px 24px", textAlign: "center", boxShadow: "0 30px 70px -20px #000" }}>
-        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }} style={{ width: "64px", height: "64px", margin: "0 auto 14px", borderRadius: "50%", background: won ? "rgba(31,168,92,.2)" : "rgba(239,75,60,.16)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "30px" }}>
+      <motion.div initial={{ opacity: 0, scale: 0.82 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.42, ease: [0.2, 1.3, 0.4, 1] }}
+        style={{ position: "relative", width: "100%", maxWidth: 400, background: "linear-gradient(180deg,rgba(22,22,34,.98),rgba(12,12,20,.98))", border: "1px solid rgba(255,255,255,.12)", borderRadius: 26, padding: "34px 26px 26px", textAlign: "center", boxShadow: "0 40px 90px -24px #000" }}>
+        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15, duration: 0.4, ease: [0.2, 1.3, 0.4, 1] }}
+          style={{ width: 70, height: 70, margin: "0 auto 16px", borderRadius: "50%", background: won ? "rgba(52,224,196,.18)" : "rgba(255,92,138,.16)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
           {won ? "★" : "↺"}
         </motion.div>
-        <motion.div {...fadeUp} transition={{ delay: 0.22, duration: 0.35 }} style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "32px", color: won ? "#5BD08A" : "#EF4B3C", lineHeight: 1 }}>
-          {won ? "You win!" : "Padi wins"}
-        </motion.div>
-        <motion.p {...fadeUp} transition={{ delay: 0.3, duration: 0.35 }} style={{ margin: "10px auto 0", color: "#C9B49C", fontSize: "14px", maxWidth: "260px", lineHeight: 1.5 }}>
-          {won ? "You walked your last piece home. Cowries incoming!" : "Tough one — your padi reached home first. Run it back."}
-        </motion.p>
-        <motion.div {...scaleIn} transition={{ delay: 0.38, duration: 0.4, ease: [0.22, 1, 0.36, 1] }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "9px", margin: "18px 0", background: "rgba(242,169,22,.1)", border: "1px solid rgba(242,169,22,.26)", borderRadius: "14px", padding: "13px" }}>
-          <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", display: "inline-block" }} />
-          <span style={{ fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "20px", color: "#F4C95A" }}>+{lastReward} cowries</span>
-        </motion.div>
-        <motion.button whileTap={{ scale: 0.97 }} onClick={onPlayAgain} style={{ width: "100%", padding: "15px", border: "none", borderRadius: "15px", background: "linear-gradient(135deg,#F2622E,#EF4B3C)", color: "#fff", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "16px", cursor: "pointer", boxShadow: "0 12px 26px -10px rgba(239,75,60,.7)" }}>
-          Play again
-        </motion.button>
-        <button onClick={onClose} style={{ width: "100%", marginTop: "10px", padding: "13px", border: "1px solid rgba(247,179,43,.16)", borderRadius: "15px", background: "transparent", color: "#C9B49C", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>
-          Back to lobby
-        </button>
+        <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 34, color: won ? "#34E0C4" : "#FF5C8A", lineHeight: 1, letterSpacing: -1 }}>{won ? "You win!" : "Padi wins"}</div>
+        <p style={{ margin: "12px auto 0", color: "#9C9CB6", fontSize: 14.5, maxWidth: 280, lineHeight: 1.5 }}>{won ? "You walked your last token home. Cowries incoming!" : "Tough one — your padi reached home first. Run it back."}</p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, margin: "20px 0", background: "rgba(52,224,196,.1)", border: "1px solid rgba(52,224,196,.28)", borderRadius: 14, padding: 14 }}>
+          <span style={{ width: 22, height: 22, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff,#34E0C4 62%)", display: "inline-block" }} />
+          <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 20, color: "#34E0C4" }}>+{lastReward} cowries</span>
+        </div>
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onPlayAgain} style={{ width: "100%", padding: 16, border: "none", borderRadius: 14, background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, cursor: "pointer", boxShadow: "0 14px 30px -10px rgba(123,97,255,.7)" }}>Play again</motion.button>
+        <button onClick={onClose} style={{ width: "100%", marginTop: 10, padding: 13, border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, background: "transparent", color: "#B9B9D0", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Back to lobby</button>
       </motion.div>
     </div>
   );
 }
 
-/* ─── Daily Rewards Overlay ──────────────────────────────────────── */
+/* ── Daily Overlay ───────────────────────────────────────────────── */
 function DailyOverlay({ streak, dailyClaimed, onClaim, onClose }: { streak: number; dailyClaimed: boolean; onClaim: () => void; onClose: () => void }) {
   const cur = Math.min(Math.max(streak, 1), 7);
-  const todayReward = DAILY_REWARDS[cur - 1];
-
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(8,5,2,.78)", backdropFilter: "blur(6px)" }}>
-      <div style={{ width: "100%", background: "linear-gradient(180deg,#241509,#180e06)", borderTop: "1px solid rgba(247,179,43,.2)", borderRadius: "26px 26px 0 0", padding: `24px clamp(16px,5vw,24px) max(24px,env(safe-area-inset-bottom,30px))`, animation: "popIn .35s ease-out" }}>
-        <div style={{ width: "40px", height: "4px", borderRadius: "4px", background: "rgba(247,179,43,.25)", margin: "0 auto 18px" }} />
-        <p style={{ margin: 0, fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "22px", color: "#FBEFE0", textAlign: "center" }}>Daily cowries</p>
-        <p style={{ margin: "5px 0 18px", color: "#A8927C", fontSize: "13px", textAlign: "center" }}>Show up every day, grow your streak, stack rewards</p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "clamp(4px,1.5vw,8px)" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(5,5,9,.8)", backdropFilter: "blur(7px)", padding: 24 }}>
+      <div style={{ width: "100%", maxWidth: 430, background: "linear-gradient(180deg,rgba(22,22,34,.98),rgba(12,12,20,.98))", border: "1px solid rgba(255,255,255,.12)", borderRadius: 24, padding: "26px 24px 24px", animation: "popIn .35s ease-out", boxShadow: "0 40px 90px -24px #000" }}>
+        <p style={{ margin: 0, fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 23, textAlign: "center" }}>Daily cowries</p>
+        <p style={{ margin: "6px 0 20px", color: "#9C9CB6", fontSize: 13.5, textAlign: "center" }}>Show up every day, grow your streak, stack rewards</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 7 }}>
           {DAILY_REWARDS.map((rw, idx) => {
-            const day = idx + 1;
-            const past = day < cur;
-            const today = day === cur;
+            const day = idx + 1; const past = day < cur; const today = day === cur;
             return (
-              <motion.div key={idx} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: idx * 0.045, ease: [0.22, 1, 0.36, 1] }} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "clamp(6px,2vw,10px) 1px clamp(5px,1.8vw,8px)", borderRadius: "10px", background: today ? "rgba(242,169,22,.18)" : past ? "rgba(31,168,92,.1)" : "rgba(255,238,214,.04)", border: `1px solid ${today ? "#F2A916" : past ? "rgba(31,168,92,.3)" : "rgba(255,238,214,.07)"}` }}>
-                <span style={{ fontSize: "clamp(7px,2.2vw,9px)", fontWeight: 800, color: today ? "#F4C95A" : past ? "#6FA582" : "#8c7866" }}>D{day}</span>
-                <span style={{ width: "clamp(12px,3.5vw,15px)", height: "clamp(12px,3.5vw,15px)", borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#FCE2A0,#E8A21C)", margin: "3px 0 2px", opacity: 0.95, display: "inline-block" }} />
-                <span style={{ fontSize: "clamp(9px,2.8vw,11px)", fontWeight: 800, color: today ? "#FBEFE0" : past ? "#9FC2AC" : "#A8927C" }}>{rw}</span>
+              <motion.div key={idx} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: idx * 0.045, ease: [0.22, 1, 0.36, 1] }}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "11px 2px 9px", borderRadius: 12, background: today ? "rgba(52,224,196,.16)" : past ? "rgba(52,224,196,.07)" : "rgba(255,255,255,.04)", border: `1px solid ${today ? "#34E0C4" : past ? "rgba(52,224,196,.24)" : "rgba(255,255,255,.07)"}` }}>
+                <span style={{ fontSize: 9, fontWeight: 800, color: today ? "#5FE7D0" : past ? "#4FB7A6" : "#74748C" }}>D{day}</span>
+                <span style={{ width: 15, height: 15, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff,#34E0C4 62%)", margin: "5px 0 4px", display: "inline-block" }} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: today ? "#ECECF2" : past ? "#8FBDB3" : "#9C9CB6" }}>{rw}</span>
               </motion.div>
             );
           })}
         </div>
-
-        <button
-          onClick={onClaim}
-          style={{ width: "100%", marginTop: "18px", padding: "15px", border: "none", borderRadius: "15px", cursor: "pointer", fontFamily: "var(--font-bricolage), 'Bricolage Grotesque', sans-serif", fontWeight: 800, fontSize: "16px", color: dailyClaimed ? "#8c7866" : "#06140b", background: dailyClaimed ? "rgba(255,238,214,.06)" : "linear-gradient(135deg,#34C46E,#1FA85C)", boxShadow: dailyClaimed ? "none" : "0 12px 26px -10px rgba(31,168,92,.7)" }}>
-          {dailyClaimed ? "Already claimed today" : `Claim ${todayReward} cowries`}
+        <button onClick={onClaim} style={{ width: "100%", marginTop: 18, padding: 15, border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, color: dailyClaimed ? "#74748C" : "#06140f", background: dailyClaimed ? "rgba(255,255,255,.06)" : "linear-gradient(135deg,#34E0C4,#22C2A8)", boxShadow: dailyClaimed ? "none" : "0 12px 26px -10px rgba(52,224,196,.6)" }}>
+          {dailyClaimed ? "Already claimed today" : `Claim ${DAILY_REWARDS[cur - 1]} cowries`}
         </button>
-        <button onClick={onClose} style={{ width: "100%", marginTop: "9px", padding: "11px", border: "none", background: "transparent", color: "#8c7866", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>
-          Maybe later
-        </button>
+        <button onClick={onClose} style={{ width: "100%", marginTop: 9, padding: 11, border: "none", background: "transparent", color: "#74748C", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Maybe later</button>
       </div>
     </div>
   );
 }
 
-/* ─── Root Page ──────────────────────────────────────────────────── */
+/* ── Cowries Overlay ─────────────────────────────────────────────── */
+function CowriesOverlay({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(5,5,9,.8)", backdropFilter: "blur(7px)", padding: 24 }}>
+      <motion.div initial={{ opacity: 0, scale: 0.88 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        style={{ width: "100%", maxWidth: 400, background: "linear-gradient(180deg,rgba(22,22,34,.98),rgba(12,12,20,.98))", border: "1px solid rgba(255,255,255,.12)", borderRadius: 22, padding: "26px 24px", boxShadow: "0 40px 90px -24px #000" }}>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(52,224,196,.14)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+          <span style={{ width: 22, height: 22, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff,#34E0C4 62%)", display: "inline-block" }} />
+        </div>
+        <p style={{ margin: 0, fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 21, textAlign: "center" }}>What are cowries?</p>
+        <p style={{ margin: "8px 0 18px", color: "#9C9CB6", fontSize: 13.5, textAlign: "center", lineHeight: 1.55 }}>Your free, on-house currency — no wallet or cash needed.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[
+            { icon: "+", color: "#34E0C4", text: "Earn them by winning matches and claiming daily streak rewards." },
+            { icon: "★", color: "#8B7CFF", text: "Spend them to unlock new padi opponents, board skins and climb the cowries leaderboard." },
+            { icon: "i", color: "#FFB23E", text: "They're just for bragging rights — no cash value, can't be bought or withdrawn." },
+          ].map(({ icon, color, text }) => (
+            <div key={icon} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(255,255,255,.04)", borderRadius: 13, padding: 12 }}>
+              <span style={{ color, fontWeight: 800, fontSize: 14, flexShrink: 0 }}>{icon}</span>
+              <span style={{ fontSize: 13, color: "#C5C5D8", lineHeight: 1.5 }}>{text}</span>
+            </div>
+          ))}
+        </div>
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onClose} style={{ width: "100%", marginTop: 18, padding: 14, border: "none", borderRadius: 13, background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Got it</motion.button>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ── Profile Overlay ─────────────────────────────────────────────── */
+function ProfileOverlay({ address, isGuest, username, onSave, onDisconnect, onClose }: {
+  address?: string; isGuest: boolean; username: string;
+  onSave: (u: string) => void; onDisconnect: () => void; onClose: () => void;
+}) {
+  const [val, setVal] = useState(username);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(5,5,9,.8)", backdropFilter: "blur(7px)", padding: 24 }}>
+      <motion.div initial={{ opacity: 0, scale: 0.88 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        style={{ width: "100%", maxWidth: 400, background: "linear-gradient(180deg,rgba(22,22,34,.98),rgba(12,12,20,.98))", border: "1px solid rgba(255,255,255,.12)", borderRadius: 22, padding: "26px 24px", boxShadow: "0 40px 90px -24px #000" }}>
+        <p style={{ margin: "0 0 4px", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 21, textAlign: "center" }}>Your profile</p>
+        <p style={{ margin: "0 0 18px", color: "#74748C", fontSize: 12.5, textAlign: "center" }}>{address ? `${address.slice(0, 10)}…${address.slice(-6)}` : isGuest ? "Guest player · this device" : "Not connected"}</p>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#9C9CB6", marginBottom: 6 }}>Username</label>
+        <input value={val} onChange={e => setVal(e.target.value)} placeholder="Pick a username" maxLength={16}
+          style={{ width: "100%", padding: "13px 14px", borderRadius: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.14)", color: "#ECECF2", fontFamily: "var(--font-manrope),'Manrope',sans-serif", fontSize: 15, fontWeight: 600, outline: "none", boxSizing: "border-box" }} />
+        <motion.button whileTap={{ scale: 0.97 }} onClick={() => onSave(val.trim().slice(0, 16))} style={{ width: "100%", marginTop: 14, padding: 14, border: "none", borderRadius: 13, background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Save username</motion.button>
+        <button onClick={onDisconnect} style={{ width: "100%", marginTop: 10, padding: 13, border: "1px solid rgba(239,75,60,.3)", borderRadius: 13, background: "rgba(239,75,60,.08)", color: "#FF7070", fontWeight: 700, fontSize: 13.5, cursor: "pointer" }}>Disconnect wallet</button>
+        <button onClick={onClose} style={{ width: "100%", marginTop: 8, padding: 11, border: "none", background: "transparent", color: "#74748C", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Close</button>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ── Root Page ──────────────────────────────────────────────────── */
 export default function Home() {
   const { address, isConnected, isConnecting } = useAccount();
   const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
-  // Mount guard: wagmi with ssr:false still server-renders in Next.js App Router.
-  // The server has no wallet (isConnected=false) while the client may already be
-  // connected, causing React hydration error #418. Render nothing until mounted.
   const [mounted, setMounted] = useState(false);
-
   const [screen, setScreen] = useState<Screen>("onboarding");
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [gameId, setGameId] = useState<bigint | null>(null);
@@ -291,15 +423,16 @@ export default function Home() {
   const [streak, setStreak] = useState(0);
   const [localWins, setLocalWins] = useState(0);
   const [winStreak, setWinStreak] = useState(0);
+  const [gamesPlayed, setGamesPlayed] = useState(0);
   const [lastReward, setLastReward] = useState(0);
   const [dailyClaimed, setDailyClaimed] = useState(false);
   const [won, setWon] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [isMiniPay, setIsMiniPay] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
+  const [username, setUsername] = useState("");
   const [autoJoinId, setAutoJoinId] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mark as mounted so we skip the server-rendered shell entirely
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
@@ -309,37 +442,27 @@ export default function Home() {
     }
   }, []);
 
-  // Auto-connect when running inside MiniPay (wallet is injected automatically)
   useEffect(() => {
     if (typeof window !== "undefined" && (window.ethereum as { isMiniPay?: boolean } | undefined)?.isMiniPay) {
-      setIsMiniPay(true);
       const connector = connectors[0];
       if (connector) connect({ connector });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-switch to Celo if wallet is on the wrong network
   useEffect(() => {
-    if (isConnected && chainId !== celo.id) {
-      switchChain({ chainId: celo.id });
-    }
+    if (isConnected && chainId !== celo.id) switchChain({ chainId: celo.id });
   }, [isConnected, chainId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Navigate to lobby once wallet connects
   useEffect(() => {
     if (isConnected && screen === "onboarding") setScreen("lobby");
   }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Navigate back to landing when wallet disconnects (button or external)
   useEffect(() => {
     if (!isConnected && mounted && screen !== "onboarding") {
-      setScreen("onboarding");
-      setGameId(null);
-      setOverlay(null);
+      setScreen("onboarding"); setGameId(null); setOverlay(null); setIsGuest(false);
     }
   }, [isConnected, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load per-wallet data from localStorage once address is known
   useEffect(() => {
     if (!address || !mounted) return;
     const key = `padi:${address.toLowerCase()}`;
@@ -350,21 +473,25 @@ export default function Home() {
       setCowries(data.cowries ?? 0);
       setStreak(data.streak ?? 0);
       setLocalWins(data.localWins ?? 0);
+      setGamesPlayed(data.gamesPlayed ?? 0);
+      setUsername(data.username ?? "");
       setDailyClaimed(data.lastClaim === new Date().toDateString());
     } catch {}
   }, [address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist cowries / streak / daily claim whenever they change
   useEffect(() => {
     if (!address || !mounted) return;
-    const key = `padi:${address.toLowerCase()}`;
-    localStorage.setItem(key, JSON.stringify({
-      cowries,
-      streak,
-      localWins,
-      lastClaim: dailyClaimed ? new Date().toDateString() : null,
-    }));
-  }, [cowries, streak, localWins, dailyClaimed, address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+    localStorage.setItem(`padi:${address.toLowerCase()}`, JSON.stringify({ cowries, streak, localWins, gamesPlayed, username, lastClaim: dailyClaimed ? new Date().toDateString() : null }));
+  }, [cowries, streak, localWins, gamesPlayed, username, dailyClaimed, address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Guest localStorage
+  useEffect(() => {
+    if (!isGuest || !mounted) return;
+    try {
+      const data = JSON.parse(localStorage.getItem("padi:guest") ?? "{}");
+      setCowries(data.cowries ?? 1240); setStreak(data.streak ?? 0); setLocalWins(data.localWins ?? 0); setGamesPlayed(data.gamesPlayed ?? 0);
+    } catch {}
+  }, [isGuest, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function showToast(text: string, color: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -372,39 +499,20 @@ export default function Home() {
     toastTimer.current = setTimeout(() => setToast(null), 1900);
   }
 
-  function handleConnect() {
-    const connector = connectors[0];
-    if (connector) connect({ connector });
-  }
-
-  function handleEnterGame(id: bigint) {
-    setGameId(id);
-    setScreen("game");
-  }
-
-  function handleEnterPvp(gid: bigint, mySeat: 0 | 1, wager: bigint, opponent: string) {
-    setPvpMeta({ gameId: gid, mySeat, wager, opponentAddress: opponent });
-    setScreen("pvp");
-  }
-
-  function handleBack() {
-    setScreen("lobby");
-    setGameId(null);
-    setPvpMeta(null);
-  }
+  function handleConnect() { const c = connectors[0]; if (c) connect({ connector: c }); }
+  function handleGuest() { setIsGuest(true); setScreen("lobby"); showToast("Playing as guest — progress saves on this device", "#34E0C4"); }
+  function handleEnterGame(id: bigint) { setGameId(id); setScreen("game"); }
+  function handleEnterPvp(gid: bigint, mySeat: 0 | 1, wager: bigint, opponent: string) { setPvpMeta({ gameId: gid, mySeat, wager, opponentAddress: opponent }); setScreen("pvp"); }
+  function handleBack() { setScreen("lobby"); setGameId(null); setPvpMeta(null); }
 
   function handleGameEnd(didWin: boolean) {
     const reward = didWin ? 250 : 25;
     setWon(didWin);
     setLastReward(reward);
-    setCowries((c) => c + reward);
-    if (didWin) {
-      setStreak((s) => s + 1);
-      setLocalWins((w) => w + 1);
-      setWinStreak((s) => s + 1);
-    } else {
-      setWinStreak(0);
-    }
+    setCowries(c => c + reward);
+    setGamesPlayed(g => g + 1);
+    if (didWin) { setStreak(s => s + 1); setLocalWins(w => w + 1); setWinStreak(s => s + 1); }
+    else setWinStreak(0);
     setOverlay(didWin ? "win" : "lose");
   }
 
@@ -412,55 +520,65 @@ export default function Home() {
     if (dailyClaimed) { setOverlay(null); return; }
     const cur = Math.min(Math.max(streak, 1), 7);
     const reward = DAILY_REWARDS[cur - 1];
-    setCowries((c) => c + reward);
-    setStreak((s) => s + 1);
+    setCowries(c => c + reward);
+    setStreak(s => s + 1);
     setDailyClaimed(true);
     setOverlay(null);
-    showToast(`+${reward} cowries claimed!`, "#F2A916");
+    showToast(`+${reward} cowries claimed!`, "#FFB23E");
   }
 
-  function handleNavigation(to: "lobby" | "daily" | "ranks") {
-    if (to === "daily") { setOverlay("daily"); return; }
-    setScreen(to);
-  }
-
-  const isApp = screen === "lobby" || screen === "game" || screen === "pvp" || screen === "ranks";
+  const displayName = username || (address ? `${address.slice(0, 6)}…${address.slice(-4)}` : isGuest ? "Guest player" : "—");
+  const isApp = ["lobby", "game", "pvp", "ranks", "matchmaking"].includes(screen);
 
   if (!mounted) return null;
 
   return (
-    <div className="app-shell">
+    <div style={{ position: "relative" }}>
+      <BgLayer />
 
       {/* Toast */}
-      {toast && (
-        <div style={{ position: "absolute", top: "14px", left: "50%", zIndex: 60, display: "flex", alignItems: "center", gap: "9px", background: "rgba(26,15,7,.96)", backdropFilter: "blur(10px)", border: `1px solid ${toast.color}`, borderRadius: "999px", padding: "9px 16px 9px 12px", boxShadow: "0 14px 34px -12px #000", animation: "slideToast .25s ease-out", transform: "translateX(-50%)" }}>
-          <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: toast.color, boxShadow: `0 0 9px ${toast.color}`, display: "inline-block" }} />
-          <span style={{ fontSize: "13px", fontWeight: 700, color: "#FBEFE0" }}>{toast.text}</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {toast && (
+          <motion.div key="toast" initial={{ opacity: 0, y: -18, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: -10, x: "-50%" }}
+            style={{ position: "fixed", top: 18, left: "50%", zIndex: 60, display: "flex", alignItems: "center", gap: 9, background: "rgba(14,14,22,.96)", backdropFilter: "blur(10px)", border: `1px solid ${toast.color}`, borderRadius: 13, padding: "11px 17px", boxShadow: "0 18px 40px -14px #000" }}>
+            <span style={{ width: 9, height: 9, borderRadius: "50%", background: toast.color, boxShadow: `0 0 10px ${toast.color}`, display: "inline-block" }} />
+            <span style={{ fontSize: 13.5, fontWeight: 700 }}>{toast.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0 }} className="no-scrollbar">
-        <AnimatePresence mode="wait">
-          {screen === "onboarding" && (
-            <motion.div key="onboarding" {...fadeIn} transition={{ duration: 0.3 }}>
-              <LandingPage onConnect={handleConnect} isConnecting={isConnecting} isMiniPay={isMiniPay} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Landing */}
+      <AnimatePresence>
+        {screen === "onboarding" && (
+          <motion.div key="landing" style={{ position: "relative", zIndex: 1 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+            <LandingPage onConnect={handleConnect} onGuest={handleGuest} isConnecting={isConnecting} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {isApp && (
-          <>
-            <AppBar address={address} cowries={cowries} streak={streak} onDisconnect={() => { setScreen("onboarding"); setGameId(null); setOverlay(null); }} />
-            <div style={{ padding: `4px clamp(14px,4.5vw,22px) 88px` }}>
+      {/* App shell */}
+      {isApp && (
+        <div className="app-shell" style={{ position: "relative", zIndex: 1 }}>
+          <AppBar
+            address={address}
+            cowries={cowries}
+            dailyClaimed={dailyClaimed}
+            screen={screen}
+            onLogoClick={() => setScreen("lobby")}
+            onLeaderboard={() => setScreen(screen === "ranks" ? "lobby" : "ranks")}
+            onCowriesClick={() => setOverlay("daily")}
+            onProfile={() => setOverlay("profile")}
+          />
+
+          {/* Scrollable content */}
+          <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0 }} className="no-scrollbar">
+            <div style={{ maxWidth: screen === "ranks" ? 720 : 1200, margin: "0 auto", padding: screen === "game" || screen === "pvp" ? "18px 14px 40px" : "28px clamp(14px,4vw,40px) 80px" }}>
               <AnimatePresence mode="wait">
                 {screen === "lobby" && (
-                  <motion.div key="lobby" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28 }}>
+                  <motion.div key="lobby" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
                     <Lobby
-                      cowries={cowries}
-                      streak={streak}
-                      localWins={localWins}
-                      winStreak={winStreak}
+                      cowries={cowries} streak={streak} localWins={localWins}
+                      winStreak={winStreak} gamesPlayed={gamesPlayed}
                       dailyClaimed={dailyClaimed}
                       initialJoinId={autoJoinId ?? undefined}
                       onEnterGame={handleEnterGame}
@@ -472,58 +590,44 @@ export default function Home() {
                   </motion.div>
                 )}
                 {screen === "game" && gameId !== null && (
-                  <motion.div key="game" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-                    <GameBoard
-                      gameId={gameId}
-                      onBack={handleBack}
-                      onGameEnd={handleGameEnd}
-                      showToast={showToast}
-                    />
+                  <motion.div key="game" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                    <GameBoard gameId={gameId} onBack={handleBack} onGameEnd={handleGameEnd} showToast={showToast} />
                   </motion.div>
                 )}
                 {screen === "pvp" && pvpMeta !== null && (
-                  <motion.div key="pvp" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-                    <PvPGameBoard
-                      meta={pvpMeta}
-                      onBack={handleBack}
-                      onGameEnd={handleGameEnd}
-                      showToast={showToast}
-                    />
+                  <motion.div key="pvp" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                    <PvPGameBoard meta={pvpMeta} onBack={handleBack} onGameEnd={handleGameEnd} showToast={showToast} />
+                  </motion.div>
+                )}
+                {screen === "ranks" && (
+                  <motion.div key="ranks" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.28 }}>
+                    <Leaderboard onBack={() => setScreen("lobby")} localWins={localWins} />
                   </motion.div>
                 )}
               </AnimatePresence>
-              {screen === "ranks" && (
-                <motion.div key="ranks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
-                  <Leaderboard onBack={() => setScreen("lobby")} localWins={localWins} />
-                </motion.div>
-              )}
             </div>
-          </>
-        )}
-      </div>
-
-      {/* Bottom Nav — only in app screens, not during active game */}
-      {isApp && screen !== "game" && screen !== "pvp" && (
-        <BottomNav screen={screen} onNavigate={handleNavigation} />
+          </div>
+        </div>
       )}
 
       {/* Overlays */}
-      {(overlay === "win" || overlay === "lose") && (
-        <WinOverlay
-          won={won}
-          lastReward={lastReward}
-          onPlayAgain={() => { setOverlay(null); setScreen("lobby"); setGameId(null); }}
-          onClose={() => { setOverlay(null); setScreen("lobby"); setGameId(null); }}
-        />
-      )}
-      {overlay === "daily" && (
-        <DailyOverlay
-          streak={streak}
-          dailyClaimed={dailyClaimed}
-          onClaim={handleClaimDaily}
-          onClose={() => setOverlay(null)}
-        />
-      )}
+      <AnimatePresence>
+        {(overlay === "win" || overlay === "lose") && (
+          <WinOverlay won={won} lastReward={lastReward}
+            onPlayAgain={() => { setOverlay(null); setScreen("lobby"); setGameId(null); setPvpMeta(null); }}
+            onClose={() => { setOverlay(null); setScreen("lobby"); setGameId(null); setPvpMeta(null); }} />
+        )}
+        {overlay === "daily" && (
+          <DailyOverlay streak={streak} dailyClaimed={dailyClaimed} onClaim={handleClaimDaily} onClose={() => setOverlay(null)} />
+        )}
+        {overlay === "cowries" && <CowriesOverlay onClose={() => setOverlay(null)} />}
+        {overlay === "profile" && (
+          <ProfileOverlay address={address} isGuest={isGuest} username={username}
+            onSave={u => { if (u) { setUsername(u); showToast("Username saved", "#34E0C4"); } setOverlay(null); }}
+            onDisconnect={() => { disconnect(); setOverlay(null); setScreen("onboarding"); }}
+            onClose={() => setOverlay(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
