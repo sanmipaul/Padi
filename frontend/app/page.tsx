@@ -8,6 +8,7 @@ import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
 import Leaderboard from "@/components/Leaderboard";
 import PvPGameBoard, { type PvpMeta } from "@/components/PvPGameBoard";
+import AuthModal from "@/components/AuthModal";
 
 type Screen = "onboarding" | "lobby" | "game" | "pvp" | "ranks" | "matchmaking";
 type Overlay = null | "win" | "lose" | "daily" | "cowries" | "profile" | "room";
@@ -65,7 +66,7 @@ function HeroBoard() {
 }
 
 /* ── Landing Page ────────────────────────────────────────────────── */
-function LandingPage({ onConnect, onGuest, isConnecting }: { onConnect: () => void; onGuest: () => void; isConnecting: boolean }) {
+function LandingPage({ onConnect, onGuest }: { onConnect: () => void; onGuest: () => void }) {
 
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -76,9 +77,9 @@ function LandingPage({ onConnect, onGuest, isConnecting }: { onConnect: () => vo
           <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#7B61FF", boxShadow: "0 0 12px #7B61FF", display: "inline-block" }} />
           <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "-.4px" }}>padi</span>
         </div>
-        <motion.button onClick={onConnect} disabled={isConnecting} whileTap={isConnecting ? {} : { scale: 0.97 }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", cursor: isConnecting ? "default" : "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 22px -8px rgba(123,97,255,.7)" }}>
-          {isConnecting ? <><span style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block" }} />Connecting…</> : "Connect Wallet"}
+        <motion.button onClick={onConnect} whileTap={{ scale: 0.97 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 22px -8px rgba(123,97,255,.7)" }}>
+          Connect Wallet
         </motion.button>
       </div>
 
@@ -106,9 +107,9 @@ function LandingPage({ onConnect, onGuest, isConnecting }: { onConnect: () => vo
 
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 14 }}>
-            <motion.button onClick={onConnect} disabled={isConnecting} whileTap={isConnecting ? {} : { scale: 0.97 }}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 22px", borderRadius: 12, border: "none", cursor: isConnecting ? "default" : "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, boxShadow: "0 12px 28px -10px rgba(123,97,255,.7)", animation: isConnecting ? "none" : "glowPulse 2.8s infinite" }}>
-              {isConnecting ? <><span style={{ width: 13, height: 13, borderRadius: "50%", border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block" }} />Connecting…</> : "Connect Wallet"}
+            <motion.button onClick={onConnect} whileTap={{ scale: 0.97 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 22px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, boxShadow: "0 12px 28px -10px rgba(123,97,255,.7)", animation: "glowPulse 2.8s infinite" }}>
+              Connect Wallet
             </motion.button>
             <motion.button onClick={onGuest} whileTap={{ scale: 0.97 }}
               style={{ padding: "13px 20px", borderRadius: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", color: "#ECECF2", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>
@@ -326,6 +327,7 @@ export default function Home() {
   const [won, setWon] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [username, setUsername] = useState("");
   const [autoJoinId, setAutoJoinId] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -341,8 +343,9 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && (window.ethereum as { isMiniPay?: boolean } | undefined)?.isMiniPay) {
-      const connector = connectors[0];
-      if (connector) connect({ connector });
+      // MiniPay injects window.ethereum — use the injected connector, not Thirdweb's
+      const injectedConn = connectors.find(c => c.id === "injected") ?? connectors[connectors.length - 1];
+      if (injectedConn) connect({ connector: injectedConn });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -396,8 +399,8 @@ export default function Home() {
     toastTimer.current = setTimeout(() => setToast(null), 1900);
   }
 
-  function handleConnect() { const c = connectors[0]; if (c) connect({ connector: c }); }
-  function handleGuest() { setIsGuest(true); setScreen("lobby"); showToast("Playing as guest — progress saves on this device", "#34E0C4"); }
+  function handleConnect() { setShowAuthModal(true); }
+  function handleGuest() { setShowAuthModal(false); setIsGuest(true); setScreen("lobby"); showToast("Playing as guest — progress saves on this device", "#34E0C4"); }
   function handleEnterGame(id: bigint) { setLocalAiCount(null); setGameId(id); setScreen("game"); }
   function handleEnterLocalGame(aiCount: number) { setLocalAiCount(aiCount); setGameId(0n); setScreen("game"); }
   function handleEnterPvp(gid: bigint, mySeat: 0 | 1, wager: bigint, opponent: string) { setPvpMeta({ gameId: gid, mySeat, wager, opponentAddress: opponent }); setScreen("pvp"); }
@@ -433,6 +436,7 @@ export default function Home() {
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
       <BgLayer />
+      <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} onGuest={handleGuest} />
 
       {/* Toast */}
       <AnimatePresence>
@@ -449,7 +453,7 @@ export default function Home() {
       <AnimatePresence>
         {screen === "onboarding" && (
           <motion.div key="landing" style={{ position: "absolute", inset: 0, zIndex: 1, overflow: "hidden" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-            <LandingPage onConnect={handleConnect} onGuest={handleGuest} isConnecting={isConnecting} />
+            <LandingPage onConnect={handleConnect} onGuest={handleGuest} />
           </motion.div>
         )}
       </AnimatePresence>
