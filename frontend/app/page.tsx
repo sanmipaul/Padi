@@ -66,200 +66,96 @@ function HeroBoard() {
 
 /* ── Landing Page ────────────────────────────────────────────────── */
 function LandingPage({ onConnect, onGuest, isConnecting }: { onConnect: () => void; onGuest: () => void; isConnecting: boolean }) {
-  function scrollTo(id: string) {
-    const el = document.getElementById(id);
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: "smooth" });
-  }
-  const connectBtn = (big: boolean) => (
-    <motion.button onClick={onConnect} disabled={isConnecting} whileTap={isConnecting ? {} : { scale: 0.97 }}
-      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9, padding: big ? "15px 28px" : "10px 18px", borderRadius: big ? 13 : 11, border: "none", cursor: isConnecting ? "default" : "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: big ? 16 : 14, boxShadow: "0 12px 30px -10px rgba(123,97,255,.7)", animation: big && !isConnecting ? "glowPulse 2.8s infinite" : "none" }}>
-      {isConnecting ? <><span style={{ width: 15, height: 15, borderRadius: "50%", border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block" }} />Connecting…</> : isConnecting ? "Connecting…" : "Connect Wallet"}
-    </motion.button>
-  );
 
   return (
-    <div style={{ position: "relative", minHeight: "100dvh", width: "100%", overflowX: "hidden" }}>
-      {/* Sticky nav */}
-      <div style={{ position: "sticky", top: 0, zIndex: 20, backdropFilter: "blur(16px)", background: "rgba(7,7,12,.72)", borderBottom: "1px solid rgba(255,255,255,.07)" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "13px clamp(16px,4vw,40px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#7B61FF", boxShadow: "0 0 14px #7B61FF", display: "inline-block" }} />
-            <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 21, letterSpacing: "-.5px" }}>padi</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            {["how-it-works", "your-padis", "prizes"].map((id, i) => (
-              <button key={id} onClick={() => scrollTo(id)} style={{ background: "none", border: "none", color: "#A6A6BE", fontFamily: "var(--font-manrope),'Manrope',sans-serif", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "none" }} className={`desktop-nav-${i}`}>{["How it works", "Your padis", "Prizes"][i]}</button>
-            ))}
-            {connectBtn(false)}
-          </div>
+    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+      {/* Nav bar */}
+      <div style={{ flexShrink: 0, backdropFilter: "blur(16px)", background: "rgba(7,7,12,.72)", borderBottom: "1px solid rgba(255,255,255,.07)", padding: "10px clamp(14px,4vw,32px)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#7B61FF", boxShadow: "0 0 12px #7B61FF", display: "inline-block" }} />
+          <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "-.4px" }}>padi</span>
         </div>
+        <motion.button onClick={onConnect} disabled={isConnecting} whileTap={isConnecting ? {} : { scale: 0.97 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", cursor: isConnecting ? "default" : "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 22px -8px rgba(123,97,255,.7)" }}>
+          {isConnecting ? <><span style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block" }} />Connecting…</> : "Connect Wallet"}
+        </motion.button>
       </div>
 
-      {/* Hero */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(40px,7vw,86px) clamp(16px,4vw,40px) clamp(28px,5vw,56px)", display: "flex", flexWrap: "wrap", gap: "clamp(28px,5vw,60px)", alignItems: "center" }}>
-        <div style={{ flex: "1 1 360px", minWidth: 290 }}>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 999, padding: "6px 14px", marginBottom: 22 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34E0C4", boxShadow: "0 0 8px #34E0C4", animation: "shimmer 1.6s infinite", display: "inline-block" }} />
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1px", color: "#B9B9D0" }}>ON-CHAIN LUDO · BUILT ON CELO</span>
+      {/* Main — fills remaining height, centered */}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", padding: "0 clamp(14px,4vw,40px)", gap: "clamp(20px,4vw,56px)" }}>
+
+        {/* Left: copy + buttons */}
+        <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 999, padding: "5px 12px", marginBottom: 14 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34E0C4", boxShadow: "0 0 7px #34E0C4", animation: "shimmer 1.6s infinite", display: "inline-block" }} />
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".9px", color: "#B9B9D0" }}>ON-CHAIN LUDO · CELO</span>
           </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.08 }}
-            style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(38px,6.4vw,70px)", lineHeight: 1.02, letterSpacing: -2, margin: 0, color: "#ECECF2" }}>
+
+          <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.48, delay: 0.06 }}
+            style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(28px,5.5vw,58px)", lineHeight: 1.04, letterSpacing: -1.5, margin: "0 0 10px", color: "#ECECF2" }}>
             Roll the dice.<br />Beat your padi.<br />
-            <span style={{ background: "linear-gradient(120deg,#34E0C4,#7B61FF 60%,#FF5C8A)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Win crypto.</span>
+            <span style={{ background: "linear-gradient(120deg,#34E0C4,#7B61FF 55%,#FF5C8A)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Win crypto.</span>
           </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.16 }}
-            style={{ color: "#9C9CB6", fontSize: "clamp(15px,1.6vw,18px)", lineHeight: 1.6, margin: "22px 0 30px", maxWidth: "min(480px,100%)" }}>
-            The classic board game, reimagined on-chain. Take on a crew of AI padis with real personalities, race your tokens home, and win a share of the weekly USDM pot.
+
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.14 }}
+            style={{ color: "#9C9CB6", fontSize: "clamp(13px,1.5vw,16px)", lineHeight: 1.55, margin: "0 0 18px", maxWidth: 420 }}>
+            Classic Ludo on-chain — take on AI padis, race your tokens home, and win USDM from the weekly pot.
           </motion.p>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.24 }}
-            style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-            {connectBtn(true)}
+
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 14 }}>
+            <motion.button onClick={onConnect} disabled={isConnecting} whileTap={isConnecting ? {} : { scale: 0.97 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 22px", borderRadius: 12, border: "none", cursor: isConnecting ? "default" : "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, boxShadow: "0 12px 28px -10px rgba(123,97,255,.7)", animation: isConnecting ? "none" : "glowPulse 2.8s infinite" }}>
+              {isConnecting ? <><span style={{ width: 13, height: 13, borderRadius: "50%", border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", animation: "spin .7s linear infinite", display: "inline-block" }} />Connecting…</> : "Connect Wallet"}
+            </motion.button>
             <motion.button onClick={onGuest} whileTap={{ scale: 0.97 }}
-              style={{ padding: "15px 24px", borderRadius: 13, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.13)", color: "#ECECF2", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 16, cursor: "pointer" }}>
+              style={{ padding: "13px 20px", borderRadius: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", color: "#ECECF2", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>
               Play as guest
             </motion.button>
           </motion.div>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.36 }}
-            style={{ display: "flex", flexWrap: "wrap", gap: 18, marginTop: 26, color: "#74748C", fontSize: 13, fontWeight: 500 }}>
-            {["Free to play", "Optional USDM stakes", "Non-custodial"].map(t => (
-              <span key={t} style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: "#34E0C4" }}>✓</span>{t}</span>
+
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.28 }}
+            style={{ display: "flex", flexWrap: "wrap", gap: 14, color: "#74748C", fontSize: 12, fontWeight: 600 }}>
+            {["Free to play", "USDM stakes optional", "Non-custodial"].map(t => (
+              <span key={t} style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ color: "#34E0C4" }}>✓</span>{t}</span>
+            ))}
+          </motion.div>
+
+          {/* Mini stats — only on wider screens */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.34 }}
+            style={{ display: "flex", gap: 16, marginTop: 20, flexWrap: "wrap" }}>
+            {[["482.5 USDM", "weekly pot"], ["12k+", "players"], ["86k", "games"]].map(([val, label]) => (
+              <div key={label} style={{ textAlign: "left" }}>
+                <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(15px,2vw,20px)", color: "#34E0C4" }}>{val}</div>
+                <div style={{ fontSize: 11, color: "#74748C", fontWeight: 600 }}>{label}</div>
+              </div>
             ))}
           </motion.div>
         </div>
-        <div style={{ flex: "1 1 360px", minWidth: 280, display: "flex", justifyContent: "center" }}>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-            style={{ width: "100%", maxWidth: 392, position: "relative", animation: "floaty 7s ease-in-out .8s infinite" }}>
-            <div style={{ position: "absolute", inset: "-12% -8%", background: "radial-gradient(circle,rgba(123,97,255,.32),transparent 65%)", filter: "blur(20px)" }} />
-            <div style={{ position: "relative", padding: 18, borderRadius: 26, background: "linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02))", border: "1px solid rgba(255,255,255,.12)", boxShadow: "0 40px 90px -30px rgba(0,0,0,.8)", backdropFilter: "blur(8px)" }}>
-              <HeroBoard />
-            </div>
-            <div style={{ position: "absolute", top: -16, right: -6, display: "flex", alignItems: "center", gap: 7, background: "rgba(12,12,20,.92)", border: "1px solid rgba(52,224,196,.4)", borderRadius: 12, padding: "9px 13px", boxShadow: "0 12px 30px -10px #000" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34E0C4", boxShadow: "0 0 9px #34E0C4", animation: "shimmer 1.6s infinite", display: "inline-block" }} />
-              <div style={{ lineHeight: 1.1 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".8px", color: "#6FE6CF" }}>LIVE POT</div>
-                <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, color: "#fff" }}>482.5 USDM</div>
-              </div>
-            </div>
-            <div style={{ position: "absolute", bottom: -14, left: -6, display: "flex", alignItems: "center", gap: 8, background: "rgba(12,12,20,.92)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: "8px 13px", boxShadow: "0 12px 30px -10px #000" }}>
-              <span style={{ width: 24, height: 24, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff,#8B7CFF 62%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#fff", flexShrink: 0 }}>C</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#C5C5D8" }}>Chidi just won 18 USDM</span>
-            </div>
-          </motion.div>
-        </div>
-      </div>
 
-      {/* Stats bar */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "8px clamp(16px,4vw,40px) clamp(34px,5vw,64px)" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, background: "rgba(255,255,255,.035)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 20, padding: "clamp(18px,3vw,28px)" }}>
-          {[["482.5", "USDM in this week's pot"], ["12,480", "Players"], ["86,200", "Games played"], ["41.6k", "USDM paid out"]].map(([val, label]) => (
-            <div key={label} style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(24px,3.4vw,34px)", color: "#34E0C4" }}>{val}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#74748C", marginTop: 3 }}>{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* How it works */}
-      <div id="how-it-works" style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(34px,5vw,64px) clamp(16px,4vw,40px)" }}>
-        <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: "1.5px", color: "#7B61FF", margin: "0 0 8px" }}>HOW IT WORKS</p>
-        <h2 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(26px,3.6vw,40px)", letterSpacing: -1, margin: "0 0 30px" }}>Three steps to the pot</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 16 }}>
-          {[
-            { n: 1, c: "#8B7CFF", bg: "rgba(123,97,255,.16)", bc: "rgba(123,97,255,.34)", title: "Connect your wallet", sub: "Link any Celo-compatible wallet in a tap. Non-custodial — you always hold your own keys." },
-            { n: 2, c: "#5FE7D0", bg: "rgba(52,224,196,.14)", bc: "rgba(52,224,196,.34)", title: "Pick padis & stake", sub: "Choose 1–3 AI opponents. Play free for cowries, or stake USDM to play for the real pot." },
-            { n: 3, c: "#FF87AC", bg: "rgba(255,92,138,.14)", bc: "rgba(255,92,138,.34)", title: "Race home & win", sub: "Get all four tokens home first to win the round, bank cowries, and climb the weekly leaderboard." },
-          ].map(({ n, c, bg, bc, title, sub }) => (
-            <div key={n} style={{ background: "linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02))", border: "1px solid rgba(255,255,255,.09)", borderRadius: 20, padding: 26 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 13, background: bg, border: `1px solid ${bc}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 20, color: c, marginBottom: 18 }}>{n}</div>
-              <h3 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 19, margin: "0 0 8px" }}>{title}</h3>
-              <p style={{ color: "#9C9CB6", fontSize: 14, lineHeight: 1.55, margin: 0 }}>{sub}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Meet your padis */}
-      <div id="your-padis" style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(20px,3vw,40px) clamp(16px,4vw,40px) clamp(34px,5vw,64px)" }}>
-        <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: "1.5px", color: "#34E0C4", margin: "0 0 8px" }}>YOUR OPPONENTS</p>
-        <h2 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(26px,3.6vw,40px)", letterSpacing: -1, margin: "0 0 30px" }}>Meet your padis</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
-          {[
-            { name: "Chidi", title: "The Strategist", color: "#8B7CFF", sub: "Patient and calculating. Plays the long game and rarely leaves a token exposed.", dots: [1, 1, 0] },
-            { name: "Amaka", title: "The Aggressor", color: "#FF5C8A", sub: "Lives for the capture. If your token is in reach, she's coming for it — every time.", dots: [1, 1, 1] },
-            { name: "Tunde", title: "The Trickster", color: "#FFB23E", sub: "Wildly unpredictable. Sometimes reckless, sometimes brilliant — never boring.", dots: [1, 0, 0] },
-          ].map(({ name, title, color, sub, dots }) => (
-            <div key={name} style={{ background: "rgba(255,255,255,.035)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 20, padding: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>
-                <span style={{ width: 50, height: 50, borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,#fff,${color} 60%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-space)", fontWeight: 700, fontSize: 20, color: "#fff", boxShadow: `0 0 18px ${color}88`, flexShrink: 0 }}>{name[0]}</span>
-                <div>
-                  <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 18 }}>{name}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color }}>{title}</div>
-                </div>
-              </div>
-              <p style={{ color: "#9C9CB6", fontSize: 14, lineHeight: 1.55, margin: "0 0 14px" }}>{sub}</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <span style={{ fontSize: 11, color: "#74748C", fontWeight: 600 }}>DIFFICULTY</span>
-                <span style={{ display: "flex", gap: 4 }}>
-                  {dots.map((on, i) => <span key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: on ? color : "rgba(255,255,255,.14)", display: "inline-block" }} />)}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Prize pool */}
-      <div id="prizes" style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(20px,3vw,40px) clamp(16px,4vw,40px) clamp(40px,6vw,72px)" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, background: "linear-gradient(135deg,rgba(123,97,255,.14),rgba(52,224,196,.08))", border: "1px solid rgba(255,255,255,.12)", borderRadius: 26, padding: "clamp(26px,4vw,44px)", alignItems: "center" }}>
-          <div style={{ flex: "1 1 280px" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: "1.5px", color: "#6FE6CF", margin: "0 0 8px" }}>WEEKLY PRIZE POOL</p>
-            <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(40px,7vw,68px)", lineHeight: 1, letterSpacing: -2 }}>482.5 <span style={{ fontSize: ".4em", color: "#9C9CB6" }}>USDM</span></div>
-            <p style={{ color: "#9C9CB6", fontSize: 15, lineHeight: 1.55, margin: "16px 0 22px", maxWidth: 420 }}>Every staked game feeds the pot. Top of the leaderboard takes 60% when the week resets — climb the ranks and cash in.</p>
-            {connectBtn(true)}
+        {/* Right: board preview — hidden on very small screens */}
+        <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.1 }}
+          style={{ flex: "0 0 auto", width: "min(42vw, min(45vh, 340px))", display: "flex", flexDirection: "column", position: "relative", animation: "floaty 7s ease-in-out .8s infinite" }}>
+          <div style={{ position: "absolute", inset: "-10%", background: "radial-gradient(circle,rgba(123,97,255,.28),transparent 65%)", filter: "blur(18px)" }} />
+          <div style={{ position: "relative", padding: 12, borderRadius: 22, background: "linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02))", border: "1px solid rgba(255,255,255,.12)", boxShadow: "0 30px 70px -24px rgba(0,0,0,.9)" }}>
+            <HeroBoard />
           </div>
-          <div style={{ flex: "1 1 260px", background: "rgba(7,7,12,.5)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 18, padding: 18 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>Top padis this week</span>
-              <span style={{ fontSize: 12, color: "#74748C" }}>3d 14h left</span>
+          <div style={{ position: "absolute", top: -12, right: -8, display: "flex", alignItems: "center", gap: 6, background: "rgba(10,10,18,.94)", border: "1px solid rgba(52,224,196,.38)", borderRadius: 10, padding: "7px 10px" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34E0C4", boxShadow: "0 0 8px #34E0C4", animation: "shimmer 1.6s infinite", display: "inline-block" }} />
+            <div style={{ lineHeight: 1.1 }}>
+              <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: ".7px", color: "#6FE6CF" }}>LIVE POT</div>
+              <div style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 13, color: "#fff" }}>482.5 USDM</div>
             </div>
-            {[["Bisi", "289 USDM"], ["Emeka", "97 USDM"], ["Ngozi", "48 USDM"]].map(([name, prize], i) => (
-              <div key={name} style={{ display: "flex", alignItems: "center", gap: 11, padding: "9px 4px", borderBottom: i < 2 ? "1px solid rgba(255,255,255,.06)" : "none" }}>
-                <span style={{ width: 18, fontFamily: "var(--font-space)", fontWeight: 700, fontSize: 14, color: ["#FFB23E", "#C5C5D8", "#E0894A"][i] }}>{i + 1}</span>
-                <span style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,.1)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12 }}>{name[0]}</span>
-                <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{name}</span>
-                <span style={{ fontWeight: 700, fontSize: 13, color: "#34E0C4" }}>{prize}</span>
-              </div>
-            ))}
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* CTA */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 clamp(16px,4vw,40px) clamp(40px,6vw,72px)" }}>
-        <div style={{ textAlign: "center", background: "rgba(255,255,255,.035)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 26, padding: "clamp(36px,6vw,64px) 24px" }}>
-          <h2 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(28px,4.4vw,48px)", letterSpacing: -1.5, margin: "0 0 14px" }}>Ready to play your padi?</h2>
-          <p style={{ color: "#9C9CB6", fontSize: 16, margin: "0 auto 26px", maxWidth: 440, lineHeight: 1.55 }}>Connect your wallet and jump into a game in seconds. Free to start, real stakes when you're ready.</p>
-          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12 }}>
-            {connectBtn(true)}
-            <motion.button onClick={onGuest} whileTap={{ scale: 0.97 }} style={{ padding: "15px 24px", borderRadius: 13, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.13)", color: "#ECECF2", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 16, cursor: "pointer" }}>Play as guest</motion.button>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,.07)" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px clamp(16px,4vw,40px)", display: "flex", flexWrap: "wrap", gap: 14, alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#7B61FF", display: "inline-block" }} />
-            <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16 }}>padi</span>
-            <span style={{ color: "#74748C", fontSize: 13, marginLeft: 6 }}>Ludo, on-chain.</span>
-          </div>
-          <div style={{ display: "flex", gap: 20, color: "#74748C", fontSize: 13, fontWeight: 500 }}>
-            <span>Built on Celo</span>
-          </div>
-        </div>
+      {/* Footer strip */}
+      <div style={{ flexShrink: 0, padding: "8px clamp(14px,4vw,32px)", borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 11, color: "#4A4A5C", fontWeight: 600 }}>Built on Celo · Non-custodial</span>
+        <span style={{ fontSize: 11, color: "#4A4A5C" }}>© 2025 Padi</span>
       </div>
     </div>
   );
@@ -535,16 +431,16 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
       <BgLayer />
 
       {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div key="toast" initial={{ opacity: 0, y: -18, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: -10, x: "-50%" }}
-            style={{ position: "fixed", top: 18, left: "50%", zIndex: 60, display: "flex", alignItems: "center", gap: 9, background: "rgba(14,14,22,.96)", backdropFilter: "blur(10px)", border: `1px solid ${toast.color}`, borderRadius: 13, padding: "11px 17px", boxShadow: "0 18px 40px -14px #000" }}>
-            <span style={{ width: 9, height: 9, borderRadius: "50%", background: toast.color, boxShadow: `0 0 10px ${toast.color}`, display: "inline-block" }} />
-            <span style={{ fontSize: 13.5, fontWeight: 700 }}>{toast.text}</span>
+            style={{ position: "fixed", top: 14, left: "50%", zIndex: 60, display: "flex", alignItems: "center", gap: 9, background: "rgba(14,14,22,.96)", backdropFilter: "blur(10px)", border: `1px solid ${toast.color}`, borderRadius: 13, padding: "10px 16px", boxShadow: "0 18px 40px -14px #000" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: toast.color, boxShadow: `0 0 9px ${toast.color}`, display: "inline-block" }} />
+            <span style={{ fontSize: 13, fontWeight: 700 }}>{toast.text}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -552,7 +448,7 @@ export default function Home() {
       {/* Landing */}
       <AnimatePresence>
         {screen === "onboarding" && (
-          <motion.div key="landing" style={{ position: "relative", zIndex: 1 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          <motion.div key="landing" style={{ position: "absolute", inset: 0, zIndex: 1, overflow: "hidden" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
             <LandingPage onConnect={handleConnect} onGuest={handleGuest} isConnecting={isConnecting} />
           </motion.div>
         )}
@@ -560,7 +456,7 @@ export default function Home() {
 
       {/* App shell */}
       {isApp && (
-        <div className="app-shell" style={{ position: "relative", zIndex: 1 }}>
+        <div className="app-shell" style={{ position: "absolute", inset: 0, zIndex: 1 }}>
           <AppBar
             address={address}
             cowries={cowries}
@@ -572,12 +468,19 @@ export default function Home() {
             onProfile={() => setOverlay("profile")}
           />
 
-          {/* Scrollable content */}
+          {/* Content area — fills remaining height, scrolls internally but hides bar */}
           <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minHeight: 0 }} className="no-scrollbar">
-            <div style={{ maxWidth: screen === "ranks" ? 720 : 1200, margin: "0 auto", padding: screen === "game" || screen === "pvp" ? "18px 14px 40px" : "28px clamp(14px,4vw,40px) 80px" }}>
+            <div style={{
+              maxWidth: screen === "ranks" ? 680 : 860,
+              margin: "0 auto",
+              padding: screen === "game" || screen === "pvp"
+                ? "10px 12px 10px"
+                : "12px clamp(12px,3vw,28px) 20px",
+              height: screen === "game" || screen === "pvp" ? "100%" : undefined,
+            }}>
               <AnimatePresence mode="wait">
                 {screen === "lobby" && (
-                  <motion.div key="lobby" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                  <motion.div key="lobby" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                     <Lobby
                       cowries={cowries} streak={streak} localWins={localWins}
                       winStreak={winStreak} gamesPlayed={gamesPlayed}
@@ -593,17 +496,17 @@ export default function Home() {
                   </motion.div>
                 )}
                 {screen === "game" && gameId !== null && (
-                  <motion.div key="game" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                  <motion.div key="game" style={{ height: "100%" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                     <GameBoard gameId={gameId} localAiCount={localAiCount ?? undefined} onBack={handleBack} onGameEnd={handleGameEnd} showToast={showToast} />
                   </motion.div>
                 )}
                 {screen === "pvp" && pvpMeta !== null && (
-                  <motion.div key="pvp" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                  <motion.div key="pvp" style={{ height: "100%" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                     <PvPGameBoard meta={pvpMeta} onBack={handleBack} onGameEnd={handleGameEnd} showToast={showToast} />
                   </motion.div>
                 )}
                 {screen === "ranks" && (
-                  <motion.div key="ranks" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.28 }}>
+                  <motion.div key="ranks" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
                     <Leaderboard onBack={() => setScreen("lobby")} localWins={localWins} />
                   </motion.div>
                 )}

@@ -4,10 +4,18 @@
 
 * { box-sizing: border-box; }
 
+html {
+  height: 100%;
+  overflow: hidden;
+  max-width: 100vw;
+}
+
 body {
   margin: 0;
+  height: 100%;
+  overflow: hidden;
+  max-width: 100vw;
   background: #07070C;
-  min-height: 100dvh;
   font-family: var(--font-manrope), 'Manrope', sans-serif;
   -webkit-font-smoothing: antialiased;
   color: #ECECF2;
