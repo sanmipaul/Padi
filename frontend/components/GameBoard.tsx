@@ -244,22 +244,24 @@ function PiecesRow({ playerPieces, dice, onMove }: { playerPieces: readonly numb
 }
 
 /* ─── Main Component ─────────────────────────────────────────────── */
-export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
+export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, showToast }: {
   gameId: bigint;
+  localAiCount?: number;       // set for guest/local games (gameId === 0n)
   onBack: () => void;
   onGameEnd: (won: boolean) => void;
   showToast: (text: string, color: string) => void;
 }) {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
+  const isLocalGame = gameId === 0n && localAiCount != null;
 
-  // Fetch game meta exactly once to get aiCount + wager
+  // Fetch game meta exactly once to get aiCount + wager (skipped for local games)
   const { data: gameMeta } = useReadContract({
     address: contract,
     abi: PADI_ABI,
     functionName: "getGame",
     args: [gameId],
-    query: { refetchInterval: false },
+    query: { enabled: !isLocalGame, refetchInterval: false },
   });
 
   // Local client-side game state
@@ -290,7 +292,10 @@ export default function GameBoard({ gameId, onBack, onGameEnd, showToast }: {
 
   // ── Initialize local state from chain meta ──────────────────────
   useEffect(() => {
-    if (!gameMeta || gs) return;
+    if (gs) return;
+    // Local/guest game — skip contract entirely
+    if (isLocalGame) { setGs(createInitialState(localAiCount!)); return; }
+    if (!gameMeta) return;
     const [, chainPieces, aiCount, chainSeat, chainDice, chainRolled, chainState, w, chainWinner] = gameMeta as unknown as [
       `0x${string}`, readonly (readonly number[])[], number, number, number, boolean, number, bigint, `0x${string}`
     ];

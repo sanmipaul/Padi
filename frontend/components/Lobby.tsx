@@ -19,6 +19,7 @@ interface LobbyProps {
   dailyClaimed: boolean;
   initialJoinId?: string;
   onEnterGame: (id: bigint) => void;
+  onEnterLocalGame: (aiCount: number) => void;
   onEnterPvp: (gameId: bigint, mySeat: 0 | 1, wager: bigint, opponent: string) => void;
   onOpenDaily: () => void;
   onViewRanks: () => void;
@@ -39,7 +40,7 @@ function Spinner() {
 
 export default function Lobby({
   cowries, streak, localWins, winStreak, gamesPlayed = 0, dailyClaimed, initialJoinId,
-  onEnterGame, onEnterPvp, onOpenDaily, onViewRanks, showToast,
+  onEnterGame, onEnterLocalGame, onEnterPvp, onOpenDaily, onViewRanks, showToast,
 }: LobbyProps) {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
@@ -140,6 +141,11 @@ export default function Lobby({
   }, [pvpData]); // eslint-disable-line
 
   function handleCreateAI() {
+    if (!address) {
+      // Guest/unconnected — run purely local, no chain interaction
+      onEnterLocalGame(aiCount);
+      return;
+    }
     if (busy) return;
     if (wagerOn) {
       const wagerBN = parseUnits(wager, 18);
@@ -177,6 +183,7 @@ export default function Lobby({
   }
 
   const aiLabel = (() => {
+    if (!address) return "Play locally (guest)";
     if (approveSubmitting) return "Check your wallet…";
     if (approveWaiting) return "Approving USDM…";
     if (createSubmitting) return "Check your wallet…";

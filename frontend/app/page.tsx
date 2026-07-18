@@ -418,6 +418,7 @@ export default function Home() {
   const [screen, setScreen] = useState<Screen>("onboarding");
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [gameId, setGameId] = useState<bigint | null>(null);
+  const [localAiCount, setLocalAiCount] = useState<number | null>(null);
   const [pvpMeta, setPvpMeta] = useState<PvpMeta | null>(null);
   const [cowries, setCowries] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -458,10 +459,10 @@ export default function Home() {
   }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!isConnected && mounted && screen !== "onboarding") {
-      setScreen("onboarding"); setGameId(null); setOverlay(null); setIsGuest(false);
+    if (!isConnected && !isGuest && mounted && screen !== "onboarding") {
+      setScreen("onboarding"); setGameId(null); setOverlay(null);
     }
-  }, [isConnected, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isConnected, isGuest, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!address || !mounted) return;
@@ -501,9 +502,10 @@ export default function Home() {
 
   function handleConnect() { const c = connectors[0]; if (c) connect({ connector: c }); }
   function handleGuest() { setIsGuest(true); setScreen("lobby"); showToast("Playing as guest — progress saves on this device", "#34E0C4"); }
-  function handleEnterGame(id: bigint) { setGameId(id); setScreen("game"); }
+  function handleEnterGame(id: bigint) { setLocalAiCount(null); setGameId(id); setScreen("game"); }
+  function handleEnterLocalGame(aiCount: number) { setLocalAiCount(aiCount); setGameId(0n); setScreen("game"); }
   function handleEnterPvp(gid: bigint, mySeat: 0 | 1, wager: bigint, opponent: string) { setPvpMeta({ gameId: gid, mySeat, wager, opponentAddress: opponent }); setScreen("pvp"); }
-  function handleBack() { setScreen("lobby"); setGameId(null); setPvpMeta(null); }
+  function handleBack() { setScreen("lobby"); setGameId(null); setLocalAiCount(null); setPvpMeta(null); }
 
   function handleGameEnd(didWin: boolean) {
     const reward = didWin ? 250 : 25;
@@ -582,6 +584,7 @@ export default function Home() {
                       dailyClaimed={dailyClaimed}
                       initialJoinId={autoJoinId ?? undefined}
                       onEnterGame={handleEnterGame}
+                      onEnterLocalGame={handleEnterLocalGame}
                       onEnterPvp={handleEnterPvp}
                       onOpenDaily={() => setOverlay("daily")}
                       onViewRanks={() => setScreen("ranks")}
@@ -591,7 +594,7 @@ export default function Home() {
                 )}
                 {screen === "game" && gameId !== null && (
                   <motion.div key="game" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-                    <GameBoard gameId={gameId} onBack={handleBack} onGameEnd={handleGameEnd} showToast={showToast} />
+                    <GameBoard gameId={gameId} localAiCount={localAiCount ?? undefined} onBack={handleBack} onGameEnd={handleGameEnd} showToast={showToast} />
                   </motion.div>
                 )}
                 {screen === "pvp" && pvpMeta !== null && (
