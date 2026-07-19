@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from "wagmi";
 import { celo } from "wagmi/chains";
+import { useActiveAccount } from "thirdweb/react";
 import Lobby from "@/components/Lobby";
 import GameBoard from "@/components/GameBoard";
 import Leaderboard from "@/components/Leaderboard";
@@ -79,7 +80,7 @@ function LandingPage({ onConnect, onGuest }: { onConnect: () => void; onGuest: (
         </div>
         <motion.button onClick={onConnect} whileTap={{ scale: 0.97 }}
           style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 13, boxShadow: "0 8px 22px -8px rgba(123,97,255,.7)" }}>
-          Connect Wallet
+          Sign in
         </motion.button>
       </div>
 
@@ -109,7 +110,7 @@ function LandingPage({ onConnect, onGuest }: { onConnect: () => void; onGuest: (
             style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 14 }}>
             <motion.button onClick={onConnect} whileTap={{ scale: 0.97 }}
               style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 22px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, boxShadow: "0 12px 28px -10px rgba(123,97,255,.7)", animation: "glowPulse 2.8s infinite" }}>
-              Connect Wallet
+              Sign in
             </motion.button>
             <motion.button onClick={onGuest} whileTap={{ scale: 0.97 }}
               style={{ padding: "13px 20px", borderRadius: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", color: "#ECECF2", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>
@@ -308,6 +309,7 @@ export default function Home() {
   const { address, isConnected, isConnecting } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
+  const twAccount = useActiveAccount(); // Thirdweb active wallet (separate from wagmi state)
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
@@ -354,18 +356,26 @@ export default function Home() {
   }, [isConnected, chainId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (isConnected && screen === "onboarding") setScreen("lobby");
-  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+    // ConnectEmbed updates Thirdweb state (twAccount) without touching wagmi.
+    // Watch both so either connection path navigates to lobby.
+    const authed = isConnected || !!twAccount;
+    if (authed && screen === "onboarding") {
+      setShowAuthModal(false);
+      setScreen("lobby");
+    }
+  }, [isConnected, twAccount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!isConnected && !isGuest && mounted && screen !== "onboarding") {
+    const authed = isConnected || !!twAccount;
+    if (!authed && !isGuest && mounted && screen !== "onboarding") {
       setScreen("onboarding"); setGameId(null); setOverlay(null);
     }
-  }, [isConnected, isGuest, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isConnected, twAccount, isGuest, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!address || !mounted) return;
-    const key = `padi:${address.toLowerCase()}`;
+    const addr = address ?? twAccount?.address;
+    if (!addr || !mounted) return;
+    const key = `padi:${addr.toLowerCase()}`;
     try {
       const raw = localStorage.getItem(key);
       if (!raw) return;
@@ -377,12 +387,13 @@ export default function Home() {
       setUsername(data.username ?? "");
       setDailyClaimed(data.lastClaim === new Date().toDateString());
     } catch {}
-  }, [address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [address, twAccount, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!address || !mounted) return;
-    localStorage.setItem(`padi:${address.toLowerCase()}`, JSON.stringify({ cowries, streak, localWins, gamesPlayed, username, lastClaim: dailyClaimed ? new Date().toDateString() : null }));
-  }, [cowries, streak, localWins, gamesPlayed, username, dailyClaimed, address, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+    const addr = address ?? twAccount?.address;
+    if (!addr || !mounted) return;
+    localStorage.setItem(`padi:${addr.toLowerCase()}`, JSON.stringify({ cowries, streak, localWins, gamesPlayed, username, lastClaim: dailyClaimed ? new Date().toDateString() : null }));
+  }, [cowries, streak, localWins, gamesPlayed, username, dailyClaimed, address, twAccount, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Guest localStorage
   useEffect(() => {
@@ -428,7 +439,8 @@ export default function Home() {
     showToast(`+${reward} cowries claimed!`, "#FFB23E");
   }
 
-  const displayName = username || (address ? `${address.slice(0, 6)}…${address.slice(-4)}` : isGuest ? "Guest player" : "—");
+  const effectiveAddress = address ?? twAccount?.address;
+  const displayName = username || (effectiveAddress ? `${effectiveAddress.slice(0, 6)}…${effectiveAddress.slice(-4)}` : isGuest ? "Guest player" : "—");
   const isApp = ["lobby", "game", "pvp", "ranks", "matchmaking"].includes(screen);
 
   if (!mounted) return null;
@@ -462,7 +474,7 @@ export default function Home() {
       {isApp && (
         <div className="app-shell" style={{ position: "absolute", inset: 0, zIndex: 1 }}>
           <AppBar
-            address={address}
+            address={effectiveAddress}
             cowries={cowries}
             dailyClaimed={dailyClaimed}
             screen={screen}
@@ -532,7 +544,7 @@ export default function Home() {
         )}
         {overlay === "cowries" && <CowriesOverlay onClose={() => setOverlay(null)} />}
         {overlay === "profile" && (
-          <ProfileOverlay address={address} isGuest={isGuest} username={username}
+          <ProfileOverlay address={effectiveAddress} isGuest={isGuest} username={username}
             onSave={u => { if (u) { setUsername(u); showToast("Username saved", "#34E0C4"); } setOverlay(null); }}
             onDisconnect={() => { disconnect(); setOverlay(null); setScreen("onboarding"); }}
             onClose={() => setOverlay(null)} />
