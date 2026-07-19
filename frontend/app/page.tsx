@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from "wagmi";
 import { celo } from "wagmi/chains";
@@ -19,6 +19,43 @@ interface ToastState { text: string; color: string }
 const DAILY_REWARDS = [20, 40, 60, 80, 120, 160, 300];
 const COLORS = ["#34E0C4", "#8B7CFF", "#FF5C8A", "#FFB23E"];
 
+/* ── Board constants (from design spec) ─────────────────────────── */
+const BOARD_PATH: [number,number][] = [[6,14],[6,13],[6,12],[6,11],[6,10],[6,9],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8],[0,7],[0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[7,0],[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[9,6],[10,6],[11,6],[12,6],[13,6],[14,6],[14,7],[14,8],[13,8],[12,8],[11,8],[10,8],[9,8],[8,9],[8,10],[8,11],[8,12],[8,13],[8,14],[7,14]];
+const BOARD_HSTRETCH: [number,number][][] = [[[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],[[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],[[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],[[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]]];
+const BOARD_YARD: [number,number][][] = [[[2,11],[3,11],[2,12],[3,12]],[[2,2],[3,2],[2,3],[3,3]],[[11,2],[12,2],[11,3],[12,3]],[[11,11],[12,11],[11,12],[12,12]]];
+const BOARD_OFFSET = [0, 13, 26, 39];
+const BOARD_SAFE = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+const BOARD_STARTSEAT: Record<number, number> = {0:0, 13:1, 26:2, 39:3};
+const BOARD_QUADC: Record<string, number> = {'6,8':0,'6,6':1,'8,6':2,'8,8':3};
+
+function hexAlpha(hex: string, a: number) {
+  return hex + Math.round(a * 255).toString(16).padStart(2, '0');
+}
+
+/* ── Brand icon (favicon = logo) ────────────────────────────────── */
+function PadiIcon({ size = 28 }: { size?: number }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '_');
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ flexShrink: 0, display: "block" }}>
+      <defs>
+        <linearGradient id={`${uid}t`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#8B7CFF"/>
+          <stop offset="1" stopColor="#5C6BFF"/>
+        </linearGradient>
+        <radialGradient id={`${uid}h`} cx="0.3" cy="0.16" r="0.95">
+          <stop offset="0" stopColor="#ffffff" stopOpacity={0.32}/>
+          <stop offset="0.55" stopColor="#ffffff" stopOpacity={0}/>
+        </radialGradient>
+      </defs>
+      <rect x="2" y="2" width="96" height="96" rx="24" fill={`url(#${uid}t)`}/>
+      <rect x="2" y="2" width="96" height="96" rx="24" fill={`url(#${uid}h)`}/>
+      <path d="M50 81 C41 64 31 57 31 40 A19 19 0 1 1 69 40 C69 57 59 64 50 81 Z" fill="#ffffff"/>
+      <circle cx="50" cy="38" r="8.6" fill="#6A5CF5"/>
+      <circle cx="50" cy="38" r="3.4" fill="#34E0C4"/>
+    </svg>
+  );
+}
+
 /* ── Background orbs + grid ─────────────────────────────────────── */
 function BgLayer() {
   return (
@@ -32,36 +69,125 @@ function BgLayer() {
   );
 }
 
-/* ── Mini demo board for hero ────────────────────────────────────── */
+/* ── Animated hero board ─────────────────────────────────────────── */
 function HeroBoard() {
-  const DEMO_PIECES = [
-    { seat: 0, col: 7, row: 9 }, { seat: 0, col: 6, row: 8 },
-    { seat: 1, col: 8, row: 5 }, { seat: 1, col: 9, row: 8 },
-    { seat: 2, col: 5, row: 6 }, { seat: 3, col: 7, row: 11 },
-  ];
+  const [pieces, setPieces] = useState<number[][]>([
+    [8, 0, 0, 24], [16, 0, 36, 0], [0, 44, 0, 11], [5, 0, 30, 0],
+  ]);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setPieces(prev => {
+        const next = prev.map(a => [...a]);
+        const s = Math.floor(Math.random() * 4);
+        const i = Math.floor(Math.random() * 4);
+        const rel = next[s][i];
+        const step = Math.floor(Math.random() * 5) + 1;
+        next[s][i] = rel === 0 ? 1 : Math.min(rel + step, 59);
+        if (next[s][i] >= 59) next[s][i] = Math.floor(Math.random() * 20);
+        return next;
+      });
+    }, 1400);
+    return () => clearInterval(t);
+  }, []);
+
+  const pathMap: Record<string, number> = {};
+  BOARD_PATH.forEach((p, i) => { pathMap[`${p[0]},${p[1]}`] = i; });
+  const hsMap: Record<string, number> = {};
+  BOARD_HSTRETCH.forEach((arr, s) => arr.forEach(p => { hsMap[`${p[0]},${p[1]}`] = s; }));
+
   const cells: React.ReactNode[] = [];
   for (let r = 0; r < 15; r++) {
     for (let c = 0; c < 15; c++) {
-      const inCenter = r >= 6 && r <= 8 && c >= 6 && c <= 8;
-      const isPath = !inCenter && ((r === 7 && c >= 0 && c <= 14) || (c === 7 && r >= 0 && r <= 14));
+      const k = `${c},${r}`;
+      const hs = hsMap[k];
+      const pi = pathMap[k];
+      const inC = r >= 6 && r <= 8 && c >= 6 && c <= 8;
       let bg = "rgba(255,255,255,.045)";
-      if (inCenter) bg = c === 7 && r === 7 ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.06)";
-      else if (isPath) bg = "rgba(255,255,255,.1)";
-      else if (r >= 9 && c <= 5) bg = "rgba(52,224,196,.2)";
-      else if (r <= 5 && c >= 9) bg = "rgba(139,124,255,.2)";
-      else if (r <= 5 && c <= 5) bg = "rgba(255,178,62,.2)";
-      else if (r >= 9 && c >= 9) bg = "rgba(255,92,138,.2)";
-      const piece = DEMO_PIECES.find(p => p.col === c && p.row === r);
+      let marker: React.ReactNode = null;
+      if (hs !== undefined) {
+        bg = hexAlpha(COLORS[hs], 0.42);
+      } else if (inC) {
+        if (c === 7 && r === 7) {
+          bg = "rgba(255,255,255,.03)";
+          marker = <span style={{ color: "#34E0C4", fontSize: 13, lineHeight: 1 }}>★</span>;
+        } else {
+          const cs = BOARD_QUADC[k];
+          bg = cs !== undefined ? hexAlpha(COLORS[cs], 0.3) : "rgba(255,255,255,.02)";
+        }
+      } else if (pi !== undefined) {
+        const ss = BOARD_STARTSEAT[pi];
+        bg = ss !== undefined ? hexAlpha(COLORS[ss], 0.5) : "rgba(255,255,255,.07)";
+        if (BOARD_SAFE.has(pi) && ss === undefined)
+          marker = <span style={{ color: "rgba(255,255,255,.3)", fontSize: 9, lineHeight: 1 }}>★</span>;
+      } else {
+        let qs = -1;
+        if (r <= 5 && c <= 5) qs = 1;
+        else if (r <= 5 && c >= 9) qs = 2;
+        else if (r >= 9 && c <= 5) qs = 0;
+        else if (r >= 9 && c >= 9) qs = 3;
+        bg = qs >= 0 ? hexAlpha(COLORS[qs], 0.13) : "rgba(255,255,255,.018)";
+      }
       cells.push(
-        <div key={`${c},${r}`} style={{ background: bg, borderRadius: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {piece && <div style={{ width: "70%", height: "70%", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.8),${COLORS[piece.seat]} 62%)`, boxShadow: `0 2px 6px ${COLORS[piece.seat]}88` }} />}
+        <div key={k} style={{ position: "relative", background: bg, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 3 }}>
+          {marker}
         </div>
       );
     }
   }
+
+  const cellPct = 100 / 15;
+  const stackMap: Record<string, number> = {};
+  const posList: Array<{ s: number; i: number; cr: [number, number]; j: number }> = [];
+  for (let s = 0; s < 4; s++) {
+    for (let i = 0; i < 4; i++) {
+      const rel = pieces[s][i];
+      let cr: [number, number] | null = null;
+      if (rel === 0) cr = BOARD_YARD[s][i] as [number, number];
+      else if (rel <= 52) cr = BOARD_PATH[(BOARD_OFFSET[s] + rel - 1) % 52] as [number, number];
+      else if (rel <= 58) cr = BOARD_HSTRETCH[s][rel - 53] as [number, number];
+      if (!cr) continue;
+      const k = `${cr[0]},${cr[1]}`;
+      const j = stackMap[k] = (stackMap[k] || 0);
+      stackMap[k]++;
+      posList.push({ s, i, cr, j });
+    }
+  }
+
+  const pieceEls = posList.map(p => {
+    const stackN = stackMap[`${p.cr[0]},${p.cr[1]}`];
+    const shift = stackN > 1 ? (p.j - (stackN - 1) / 2) * 3.2 : 0;
+    const left = (p.cr[0] + 0.5) * cellPct + shift;
+    const top = (p.cr[1] + 0.5) * cellPct + shift * 0.6;
+    const col = COLORS[p.s];
+    return (
+      <div key={`${p.s}-${p.i}`} style={{
+        position: "absolute", left: `${left}%`, top: `${top}%`,
+        transform: "translate(-50%,-50%)",
+        width: "5.9%", height: "5.9%", borderRadius: "50%",
+        border: "1px solid rgba(0,0,0,.35)",
+        background: `radial-gradient(circle at 34% 30%,rgba(255,255,255,.9),${col} 58%)`,
+        boxShadow: `0 2px 4px rgba(0,0,0,.6)`,
+        transition: "left .48s cubic-bezier(.22,1,.36,1), top .48s cubic-bezier(.22,1,.36,1)",
+        zIndex: 4,
+      }} />
+    );
+  });
+
   return (
-    <div style={{ width: "100%", aspectRatio: "1/1", display: "grid", gridTemplateColumns: "repeat(15,1fr)", gridTemplateRows: "repeat(15,1fr)", gap: 1, padding: 6, background: "#0B0B14", borderRadius: 14, border: "1px solid rgba(255,255,255,.08)" }}>
-      {cells}
+    <div style={{ position: "relative", width: "100%", aspectRatio: "1/1" }}>
+      <div style={{
+        position: "absolute", inset: 0,
+        display: "grid", gridTemplateColumns: "repeat(15,1fr)", gridTemplateRows: "repeat(15,1fr)",
+        gap: 2, padding: 9, background: "#0B0B14", borderRadius: 16,
+        border: "1px solid rgba(255,255,255,.08)",
+        boxShadow: "inset 0 0 40px rgba(123,97,255,.06),0 20px 50px -22px rgba(0,0,0,.85)",
+      }}>
+        {cells}
+      </div>
+      <div style={{ position: "absolute", inset: 9, pointerEvents: "none" }}>
+        {pieceEls}
+      </div>
     </div>
   );
 }
@@ -74,8 +200,8 @@ function LandingPage({ onConnect, onGuest }: { onConnect: () => void; onGuest: (
 
       {/* Nav bar */}
       <div style={{ flexShrink: 0, backdropFilter: "blur(16px)", background: "rgba(7,7,12,.72)", borderBottom: "1px solid rgba(255,255,255,.07)", padding: "10px clamp(14px,4vw,32px)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#7B61FF", boxShadow: "0 0 12px #7B61FF", display: "inline-block" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <PadiIcon size={28} />
           <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: "-.4px" }}>padi</span>
         </div>
         <motion.button onClick={onConnect} whileTap={{ scale: 0.97 }}
@@ -172,7 +298,7 @@ function AppBar({ address, cowries, dailyClaimed, screen, onLogoClick, onLeaderb
     <div style={{ position: "sticky", top: 0, zIndex: 20, backdropFilter: "blur(16px)", background: "rgba(7,7,12,.72)", borderBottom: "1px solid rgba(255,255,255,.07)", flexShrink: 0 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "12px clamp(16px,4vw,40px)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <button onClick={onLogoClick} style={{ display: "flex", alignItems: "center", gap: 9, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-          <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#7B61FF", boxShadow: "0 0 14px #7B61FF", display: "inline-block" }} />
+          <PadiIcon size={28} />
           <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: "-.5px", color: "#ECECF2" }}>padi</span>
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>

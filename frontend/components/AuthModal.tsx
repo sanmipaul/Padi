@@ -77,7 +77,17 @@ export default function AuthModal({ open, onClose, onGuest }: {
               borderBottom: "1px solid rgba(255,255,255,.07)",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#7B61FF", boxShadow: "0 0 10px #7B61FF", display: "inline-block" }} />
+                <svg width="22" height="22" viewBox="0 0 100 100" style={{ flexShrink: 0, display: "block" }}>
+                  <defs>
+                    <linearGradient id="amTile" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stopColor="#8B7CFF"/><stop offset="1" stopColor="#5C6BFF"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#amTile)"/>
+                  <path d="M50 81 C41 64 31 57 31 40 A19 19 0 1 1 69 40 C69 57 59 64 50 81 Z" fill="#fff"/>
+                  <circle cx="50" cy="38" r="8.6" fill="#6A5CF5"/>
+                  <circle cx="50" cy="38" r="3.4" fill="#34E0C4"/>
+                </svg>
                 <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, letterSpacing: "-.3px", color: "#ECECF2" }}>
                   Sign in to Padi
                 </span>
