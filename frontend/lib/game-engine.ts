@@ -99,15 +99,17 @@ function applyMove(pieces: AllPieces, seat: number, idx: number, newPos: number,
 }
 
 function aiPickPiece(pieces: AllPieces, seat: number, dice: number): number {
-  let best = 255, bestScore = 0;
+  let best = 255, bestScore = -1;
   for (let p = 0; p < PIECES; p++) {
     const pos = pieces[seat][p];
     if (!isPieceMovable(pos, dice)) continue;
     const newPos = pos === AT_BASE ? 1 : pos + dice;
-    let score = pos === AT_BASE ? 50 : pos;
+    // Home-stretch pieces score highest, board pieces score by distance, yard last
+    let score = pos === AT_BASE ? 1 : pos > BOARD_SIZE ? 100 + pos : pos;
     if (newPos >= 1 && newPos <= BOARD_SIZE) {
       const myG = globalPos(seat, newPos);
       if (!isSafeSquare(myG)) {
+        // Bonus for capturing the player's piece
         for (let pp = 0; pp < PIECES; pp++) {
           const pPos = pieces[0][pp];
           if (pPos >= 1 && pPos <= BOARD_SIZE && globalPos(0, pPos) === myG) score = 200;
@@ -158,7 +160,7 @@ export function performRoll(state: GameState): { state: GameState; dice: number 
   return { state: { ...state, lastDice: dice, diceRolled: true }, dice };
 }
 
-/** Apply a player piece move. Returns valid=false if the move is illegal. */
+/** Apply a player piece move. Does NOT run AI turns — call advanceAI() next. */
 export function performMove(
   state: GameState,
   pieceIdx: number,
@@ -193,17 +195,22 @@ export function performMove(
   if (isAllFinished(next.pieces[0])) {
     next.finished  = true;
     next.playerWon = true;
-    return { state: next, valid: true, captured };
   }
 
-  runAITurns(next);
   return { state: next, valid: true, captured };
 }
 
-/** When player rolls and has no valid move, skip their turn and let AI play. */
+/** Run one round of AI turns and return the new state. */
+export function advanceAI(state: GameState): GameState {
+  if (state.finished) return state;
+  const next = deepCopy(state);
+  runAITurns(next);
+  return next;
+}
+
+/** When player rolls and has no valid move, skip their turn (no AI — call advanceAI separately). */
 export function skipTurn(state: GameState): GameState {
   const next = deepCopy(state);
   next.diceRolled = false;
-  runAITurns(next);
   return next;
 }

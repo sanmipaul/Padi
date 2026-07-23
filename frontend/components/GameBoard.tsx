@@ -6,7 +6,7 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { PADI_ADDRESS, PADI_ABI } from "@/lib/contracts";
 import { BOARD_PATH, homeStretchCoords, yardCoords } from "@/lib/ludo";
 import {
-  createInitialState, performRoll, performMove, skipTurn,
+  createInitialState, performRoll, performMove, skipTurn, advanceAI,
   hasValidMove, isPieceMovable, isAllFinished,
   type GameState, type AllPieces,
   FINISHED_POS,
@@ -270,6 +270,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
   const [rolling, setRolling]     = useState(false);
   const [dieFace, setDieFace]     = useState(6);
   const [aiSpeech, setAiSpeech]   = useState<string | null>(null);
+  const [aiThinking, setAiThinking] = useState(false);
 
   // Piece choices recorded per player turn (including 255 for skip turns).
   // Padded to 100 entries when submitting so on-chain game always completes.
@@ -352,6 +353,20 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     localStorage.removeItem(`padi:gs:${gameId.toString()}`);
   }, [gs?.finished, gameId]);
 
+  // AI thinking — runs after player moves, with a realistic delay so pieces visibly animate
+  useEffect(() => {
+    if (!aiThinking || !gs) return;
+    if (gs.finished) { setAiThinking(false); return; }
+    const delay = 700 + Math.random() * 500;
+    const t = setTimeout(() => {
+      const afterAI = advanceAI(gs);
+      saveGame(afterAI);
+      setGs(afterAI);
+      setAiThinking(false);
+    }, delay);
+    return () => clearTimeout(t);
+  }, [aiThinking]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Settlement triggers ─────────────────────────────────────────
   useEffect(() => {
     if (!gs?.finished || settledRef.current) return;
@@ -411,8 +426,8 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
   // ── Derived state ───────────────────────────────────────────────
   const totalSeats  = 1 + gs.aiCount;
   const isMyTurn    = gs.currentSeat === 0 && !gs.finished;
-  const canRollNow  = isMyTurn && !gs.diceRolled && !rolling;
-  const canMoveNow  = isMyTurn && gs.diceRolled;
+  const canRollNow  = isMyTurn && !gs.diceRolled && !rolling && !aiThinking;
+  const canMoveNow  = isMyTurn && gs.diceRolled && !aiThinking;
   const playerPieces = gs.pieces[0];
   const displayFace  = gs.diceRolled ? gs.lastDice : dieFace;
   const settling     = settleSubmitting || settleWaiting;
@@ -422,6 +437,8 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     statusText = settleSubmitting ? "Check your wallet…" : "Settling on chain…";
   } else if (gs.finished) {
     statusText = wager > 0n ? "Settling wager on chain…" : gs.playerWon ? "You win! 🎉" : "AI padi wins";
+  } else if (aiThinking) {
+    statusText = `${NAMES[1]} is thinking…`;
   } else if (isMyTurn) {
     statusText = canRollNow ? "Your turn — roll the dice" : `Rolled ${gs.lastDice} — pick a piece`;
   } else {
@@ -442,12 +459,14 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
         setDieFace(dice);
         setRolling(false);
         if (!hasValidMove(next.pieces[0], dice)) {
-          // No valid move — record skip, save immediately, then show dice for 900ms
+          // No valid move — record skip, show dice for 900ms then let AI run
           playerMoves.current.push(255);
           const skipped = skipTurn(next);
-          saveGame(skipped);
           setGs(next);
-          setTimeout(() => setGs(skipped), 900);
+          setTimeout(() => {
+            setGs(skipped);
+            setAiThinking(true);
+          }, 900);
         } else {
           saveGame(next);
           setGs(next);
@@ -463,9 +482,10 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     playerMoves.current.push(pieceIdx);
     saveGame(next);
     setGs(next);
+    if (!next.finished) setAiThinking(true);
     if (captured) {
       const rand = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)] ?? "";
-      const speech = rand(AI_TALK.capture[gs.currentSeat === 0 ? 1 : gs.currentSeat] ?? []);
+      const speech = rand(AI_TALK.capture[1] ?? []);
       if (speech) { setAiSpeech(speech); setTimeout(() => setAiSpeech(null), 2200); }
     }
   }
