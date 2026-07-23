@@ -121,14 +121,17 @@ function aiPickPiece(pieces: AllPieces, seat: number, dice: number): number {
   return best;
 }
 
-function runAITurns(state: GameState): void {
+function runAITurnsTracked(state: GameState): { dice: number; moved: boolean } {
   const totalSeats = 1 + state.aiCount;
+  let firstDice = 0;
+  let moved = false;
   let maxIter = 20;
   while (!state.finished && maxIter-- > 0) {
     const seat = state.currentSeat === 0 ? 1 : state.currentSeat;
     if (seat >= totalSeats) { state.currentSeat = 0; break; }
     state.currentSeat = seat;
     const dice = rollDice();
+    if (firstDice === 0) firstDice = dice;
     if (!hasValidMove(state.pieces[seat], dice)) {
       state.currentSeat = (seat + 1 >= totalSeats) ? 0 : seat + 1;
       if (state.currentSeat === 0) break;
@@ -142,15 +145,19 @@ function runAITurns(state: GameState): void {
     }
     const from = state.pieces[seat][pick];
     applyMove(state.pieces, seat, pick, from === AT_BASE ? 1 : from + dice, totalSeats);
+    moved = true;
     if (isAllFinished(state.pieces[seat])) {
       state.finished  = true;
       state.playerWon = false;
-      return;
+      return { dice: firstDice, moved };
     }
     state.currentSeat = (seat + 1 >= totalSeats) ? 0 : seat + 1;
     if (state.currentSeat === 0) break;
   }
+  return { dice: firstDice, moved };
 }
+
+function runAITurns(state: GameState): void { runAITurnsTracked(state); }
 
 // ── Public API ────────────────────────────────────────────────────────────
 
@@ -200,12 +207,12 @@ export function performMove(
   return { state: next, valid: true, captured };
 }
 
-/** Run one round of AI turns and return the new state. */
-export function advanceAI(state: GameState): GameState {
-  if (state.finished) return state;
+/** Run one round of AI turns and return the new state plus the first AI's dice roll. */
+export function advanceAI(state: GameState): { state: GameState; aiDice: number; moved: boolean } {
+  if (state.finished) return { state, aiDice: 0, moved: false };
   const next = deepCopy(state);
-  runAITurns(next);
-  return next;
+  const { dice: aiDice, moved } = runAITurnsTracked(next);
+  return { state: next, aiDice, moved };
 }
 
 /** When player rolls and has no valid move, skip their turn (no AI — call advanceAI separately). */

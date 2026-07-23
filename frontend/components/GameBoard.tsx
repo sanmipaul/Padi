@@ -271,6 +271,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
   const [dieFace, setDieFace]     = useState(6);
   const [aiSpeech, setAiSpeech]   = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
+  const [aiRolled, setAiRolled]   = useState<{ dice: number; moved: boolean } | null>(null);
 
   // Piece choices recorded per player turn (including 255 for skip turns).
   // Padded to 100 entries when submitting so on-chain game always completes.
@@ -353,16 +354,19 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     localStorage.removeItem(`padi:gs:${gameId.toString()}`);
   }, [gs?.finished, gameId]);
 
-  // AI thinking — runs after player moves, with a realistic delay so pieces visibly animate
+  // AI thinking — runs after player moves, with a visible delay + dice reveal
   useEffect(() => {
     if (!aiThinking || !gs) return;
     if (gs.finished) { setAiThinking(false); return; }
-    const delay = 700 + Math.random() * 500;
+    const delay = 700 + Math.random() * 400;
     const t = setTimeout(() => {
-      const afterAI = advanceAI(gs);
+      const { state: afterAI, aiDice, moved } = advanceAI(gs);
       saveGame(afterAI);
       setGs(afterAI);
       setAiThinking(false);
+      setAiRolled({ dice: aiDice, moved });
+      // Show Chidi's roll result for 900ms then hand back to player
+      setTimeout(() => setAiRolled(null), 900);
     }, delay);
     return () => clearTimeout(t);
   }, [aiThinking]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -426,10 +430,10 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
   // ── Derived state ───────────────────────────────────────────────
   const totalSeats  = 1 + gs.aiCount;
   const isMyTurn    = gs.currentSeat === 0 && !gs.finished;
-  const canRollNow  = isMyTurn && !gs.diceRolled && !rolling && !aiThinking;
-  const canMoveNow  = isMyTurn && gs.diceRolled && !aiThinking;
+  const canRollNow  = isMyTurn && !gs.diceRolled && !rolling && !aiThinking && !aiRolled;
+  const canMoveNow  = isMyTurn && gs.diceRolled && !aiThinking && !aiRolled;
   const playerPieces = gs.pieces[0];
-  const displayFace  = gs.diceRolled ? gs.lastDice : dieFace;
+  const displayFace  = aiRolled ? aiRolled.dice : gs.diceRolled ? gs.lastDice : dieFace;
   const settling     = settleSubmitting || settleWaiting;
 
   let statusText = "";
@@ -439,6 +443,10 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     statusText = wager > 0n ? "Settling wager on chain…" : gs.playerWon ? "You win! 🎉" : "AI padi wins";
   } else if (aiThinking) {
     statusText = `${NAMES[1]} is thinking…`;
+  } else if (aiRolled) {
+    statusText = aiRolled.moved
+      ? `${NAMES[1]} rolled ${aiRolled.dice} — moved!`
+      : `${NAMES[1]} rolled ${aiRolled.dice} — no move`;
   } else if (isMyTurn) {
     statusText = canRollNow ? "Your turn — roll the dice" : `Rolled ${gs.lastDice} — pick a piece`;
   } else {
