@@ -159,12 +159,13 @@ function aiPickPiece(pieces: AllPieces, seat: number, dice: number, state: GameS
 }
 
 function runAITurnsTracked(state: GameState): { dice: number; moved: boolean; capturedPlayer: boolean } {
-  const ts = getTotalSeats(state);
-  let firstDice = 0;
-  let moved = false;
+  const ts          = getTotalSeats(state);
+  const doubleBoard = state.localRules && state.aiCount === 1;
+  let firstDice     = 0;
+  let moved         = false;
   let capturedPlayer = false;
-  let maxIter = 40;
-  let consecutiveSixes = 0;
+  let maxIter       = 40;
+  let extraTurns    = 0; // cap consecutive bonus turns to prevent infinite loops
 
   while (!state.finished && maxIter-- > 0) {
     if (isPlayerSeat(state.currentSeat, state)) break;
@@ -173,28 +174,34 @@ function runAITurnsTracked(state: GameState): { dice: number; moved: boolean; ca
     if (firstDice === 0) firstDice = dice;
 
     let piecesMoved = false;
+    let thisCapture = false;
+
     if (hasValidMove(state.pieces[seat], dice)) {
       const pick = aiPickPiece(state.pieces, seat, dice, state);
       if (pick !== 255) {
-        const from = state.pieces[seat][pick];
+        const from   = state.pieces[seat][pick];
         const newPos = from === AT_BASE ? 1 : from + dice;
-        // Detect capture of player pieces before applying
+        // Detect player-piece capture before applying
         if (newPos >= 1 && newPos <= BOARD_SIZE) {
           const gPos = globalPos(seat, newPos);
           if (!isSafeSquare(gPos)) {
             for (let s = 0; s < ts; s++) {
+              if (s === seat) continue;
+              if (doubleBoard && (s % 2 === 1) === (seat % 2 === 1)) continue; // same team
               if (!isPlayerSeat(s, state)) continue;
               for (let pp = 0; pp < PIECES; pp++) {
                 const pPos = state.pieces[s][pp];
-                if (pPos >= 1 && pPos <= BOARD_SIZE && globalPos(s, pPos) === gPos)
-                  capturedPlayer = true;
+                if (pPos >= 1 && pPos <= BOARD_SIZE && globalPos(s, pPos) === gPos) {
+                  thisCapture = true;
+                }
               }
             }
           }
         }
-        applyMove(state.pieces, seat, pick, newPos, ts, state.localRules && state.aiCount === 1);
+        applyMove(state.pieces, seat, pick, newPos, ts, doubleBoard);
         piecesMoved = true;
-        moved = true;
+        moved       = true;
+        if (thisCapture) capturedPlayer = true;
         if (isAITeamWon(state.pieces, seat, state)) {
           state.finished  = true;
           state.playerWon = false;
@@ -203,17 +210,14 @@ function runAITurnsTracked(state: GameState): { dice: number; moved: boolean; ca
       }
     }
 
-    // Extra turn for rolling 6 (max 2 consecutive extras)
-    if (state.localRules && dice === 6 && piecesMoved) {
-      consecutiveSixes++;
-      if (consecutiveSixes < 3) continue;
-      consecutiveSixes = 0;
+    // Extra turn: rolled 6 OR killed a player piece (local rules, max 3 extras)
+    if (state.localRules && (dice === 6 || thisCapture) && piecesMoved && extraTurns < 3) {
+      extraTurns++;
+      // stay on same seat for bonus roll
     } else {
-      consecutiveSixes = 0;
+      extraTurns = 0;
+      state.currentSeat = (seat + 1) % ts;
     }
-
-    // Advance to next seat
-    state.currentSeat = (seat + 1) % ts;
   }
 
   return { dice: firstDice, moved, capturedPlayer };
@@ -266,8 +270,8 @@ export function performMove(
   applyMove(next.pieces, activeSeat, pieceIdx, newPos, ts, state.localRules && state.aiCount === 1);
   next.diceRolled = false;
 
-  // Extra turn for rolling 6 in local mode; otherwise advance seat
-  if (state.localRules && state.lastDice === 6) {
+  // Extra turn: rolled 6 OR killed an opponent (local rules)
+  if (state.localRules && (state.lastDice === 6 || captured)) {
     next.currentSeat = activeSeat;  // stay — bonus roll
   } else {
     next.currentSeat = (activeSeat + 1) % ts;

@@ -440,7 +440,8 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     : [...NAMES];
 
   const isSecondBoard = gs.localRules && gs.aiCount === 1 && gs.currentSeat === 2;
-  const isBonusTurn   = canRollNow && gs.lastDice === 6;
+  const isSixBonus    = canRollNow && gs.lastDice === 6;
+  const isKillBonus   = canRollNow && gs.lastDice > 0 && gs.lastDice < 6;
 
   let statusText = "";
   if (settling) {
@@ -456,11 +457,10 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
       : `${aiName} rolled ${aiRolled.dice} — no move`;
   } else if (isMyTurn) {
     if (!gs.diceRolled) {
-      statusText = isBonusTurn
-        ? "Rolled 6 — bonus turn! Roll again"
-        : isSecondBoard
-        ? "Your 2nd board — roll!"
-        : "Your turn — roll the dice";
+      if (isSixBonus)       statusText = "Rolled 6 — bonus turn! Roll again";
+      else if (isKillBonus) statusText = "You killed — bonus turn! Roll again";
+      else if (isSecondBoard) statusText = "Your 2nd board — roll!";
+      else                  statusText = "Your turn — roll the dice";
     } else {
       statusText = isSecondBoard
         ? `Rolled ${gs.lastDice} — pick piece (2nd board)`
@@ -584,7 +584,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
           </div>
           {canRollNow ? (
             <motion.button onClick={doRoll} whileTap={{ scale: 0.93 }}
-              style={{ flexShrink: 0, padding: "11px 18px", border: "none", borderRadius: "13px", background: isBonusTurn ? `linear-gradient(135deg,#FFB23E,#FF8C00)` : "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "15px", cursor: "pointer", boxShadow: isBonusTurn ? "0 10px 22px -8px rgba(255,178,62,.8)" : "0 10px 22px -8px rgba(123,97,255,.8)", animation: "glowPulse 1.8s infinite" }}>
+              style={{ flexShrink: 0, padding: "11px 18px", border: "none", borderRadius: "13px", background: isSixBonus ? "linear-gradient(135deg,#FFB23E,#FF8C00)" : isKillBonus ? "linear-gradient(135deg,#34E0C4,#00B899)" : "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "15px", cursor: "pointer", boxShadow: isSixBonus ? "0 10px 22px -8px rgba(255,178,62,.8)" : isKillBonus ? "0 10px 22px -8px rgba(52,224,196,.7)" : "0 10px 22px -8px rgba(123,97,255,.8)", animation: "glowPulse 1.8s infinite" }}>
               Roll
             </motion.button>
           ) : (

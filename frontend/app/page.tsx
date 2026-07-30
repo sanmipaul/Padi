@@ -379,29 +379,50 @@ function DailyOverlay({ streak, dailyClaimed, onClaim, onClose }: { streak: numb
 }
 
 /* ── Cowries Overlay ─────────────────────────────────────────────── */
-function CowriesOverlay({ onClose }: { onClose: () => void }) {
+function CowriesOverlay({ cowries, streak, dailyClaimed, onClaim, onClose }: {
+  cowries: number; streak: number; dailyClaimed: boolean;
+  onClaim: () => void; onClose: () => void;
+}) {
+  const cur = Math.min(Math.max(streak, 1), 7);
+  const todayReward = DAILY_REWARDS[cur - 1] ?? 20;
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(5,5,9,.8)", backdropFilter: "blur(7px)", padding: 24 }}>
       <motion.div initial={{ opacity: 0, scale: 0.88 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         style={{ width: "100%", maxWidth: 400, background: "linear-gradient(180deg,rgba(22,22,34,.98),rgba(12,12,20,.98))", border: "1px solid rgba(255,255,255,.12)", borderRadius: 22, padding: "26px 24px", boxShadow: "0 40px 90px -24px #000" }}>
-        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(52,224,196,.14)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-          <span style={{ width: 22, height: 22, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff,#34E0C4 62%)", display: "inline-block" }} />
+
+        {/* Balance pill */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
+          <span style={{ width: 28, height: 28, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%,#fff,#34E0C4 62%)", display: "inline-block", flexShrink: 0 }} />
+          <span style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 800, fontSize: 28, color: "#34E0C4", letterSpacing: -1 }}>{cowries.toLocaleString()}</span>
         </div>
-        <p style={{ margin: 0, fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 21, textAlign: "center" }}>What are cowries?</p>
-        <p style={{ margin: "8px 0 18px", color: "#9C9CB6", fontSize: 13.5, textAlign: "center", lineHeight: 1.55 }}>Your free, on-house currency — no wallet or cash needed.</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+        <p style={{ margin: "0 0 4px", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 19, textAlign: "center" }}>What are cowries?</p>
+        <p style={{ margin: "0 0 18px", color: "#9C9CB6", fontSize: 13, textAlign: "center", lineHeight: 1.5 }}>Your in-game currency — earned free, no wallet needed.</p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
           {[
-            { icon: "+", color: "#34E0C4", text: "Earn them by winning matches and claiming daily streak rewards." },
-            { icon: "★", color: "#8B7CFF", text: "Spend them to unlock new padi opponents, board skins and climb the cowries leaderboard." },
-            { icon: "i", color: "#FFB23E", text: "They're just for bragging rights — no cash value, can't be bought or withdrawn." },
-          ].map(({ icon, color, text }) => (
-            <div key={icon} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(255,255,255,.04)", borderRadius: 13, padding: 12 }}>
-              <span style={{ color, fontWeight: 800, fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 13, color: "#C5C5D8", lineHeight: 1.5 }}>{text}</span>
+            { icon: "★", color: "#34E0C4", label: "Win matches", text: "Every game you win earns you cowries. The higher your streak, the bigger the haul." },
+            { icon: "↑", color: "#FFB23E", label: "Daily streak", text: "Claim cowries every day to keep your streak alive. Miss a day and it resets." },
+            { icon: "⊕", color: "#8B7CFF", label: "Leaderboard", text: "Your cowrie count puts you on the global leaderboard — climb it and flex on other padis." },
+            { icon: "○", color: "#FF5C8A", label: "No cash value", text: "Cowries are for bragging rights only. They can't be bought, sold, or withdrawn." },
+          ].map(({ icon, color, label, text }) => (
+            <div key={label} style={{ display: "flex", gap: 11, alignItems: "flex-start", background: "rgba(255,255,255,.04)", borderRadius: 13, padding: "11px 12px" }}>
+              <span style={{ color, fontWeight: 800, fontSize: 15, flexShrink: 0, width: 18, textAlign: "center", marginTop: 1 }}>{icon}</span>
+              <div>
+                <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#ECECF2", marginBottom: 2 }}>{label}</span>
+                <span style={{ fontSize: 12.5, color: "#9C9CB6", lineHeight: 1.45 }}>{text}</span>
+              </div>
             </div>
           ))}
         </div>
-        <motion.button whileTap={{ scale: 0.97 }} onClick={onClose} style={{ width: "100%", marginTop: 18, padding: 14, border: "none", borderRadius: 13, background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Got it</motion.button>
+
+        {/* Daily claim CTA */}
+        <motion.button whileTap={{ scale: 0.97 }} onClick={dailyClaimed ? undefined : () => { onClaim(); onClose(); }}
+          disabled={dailyClaimed}
+          style={{ width: "100%", marginTop: 16, padding: 13, border: "none", borderRadius: 13, cursor: dailyClaimed ? "default" : "pointer", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 14, color: dailyClaimed ? "#74748C" : "#06140f", background: dailyClaimed ? "rgba(255,255,255,.06)" : "linear-gradient(135deg,#34E0C4,#22C2A8)", boxShadow: dailyClaimed ? "none" : "0 10px 22px -8px rgba(52,224,196,.55)" }}>
+          {dailyClaimed ? `Daily claimed · come back tomorrow` : `Claim today's ${todayReward} cowries`}
+        </motion.button>
+        <button onClick={onClose} style={{ width: "100%", marginTop: 8, padding: 11, border: "none", background: "transparent", color: "#74748C", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Close</button>
       </motion.div>
     </div>
   );
@@ -606,7 +627,7 @@ export default function Home() {
             screen={screen}
             onLogoClick={() => setScreen("lobby")}
             onLeaderboard={() => setScreen(screen === "ranks" ? "lobby" : "ranks")}
-            onCowriesClick={() => setOverlay("daily")}
+            onCowriesClick={() => setOverlay("cowries")}
             onProfile={() => setOverlay("profile")}
           />
 
@@ -668,7 +689,13 @@ export default function Home() {
         {overlay === "daily" && (
           <DailyOverlay streak={streak} dailyClaimed={dailyClaimed} onClaim={handleClaimDaily} onClose={() => setOverlay(null)} />
         )}
-        {overlay === "cowries" && <CowriesOverlay onClose={() => setOverlay(null)} />}
+        {overlay === "cowries" && (
+          <CowriesOverlay
+            cowries={cowries} streak={streak} dailyClaimed={dailyClaimed}
+            onClaim={handleClaimDaily}
+            onClose={() => setOverlay(null)}
+          />
+        )}
         {overlay === "profile" && (
           <ProfileOverlay address={effectiveAddress} isGuest={isGuest} username={username}
             onSave={u => { if (u) { setUsername(u); showToast("Username saved", "#34E0C4"); } setOverlay(null); }}
