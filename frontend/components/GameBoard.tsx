@@ -446,9 +446,10 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     : [...NAMES];
 
   const isSecondBoard = gs.localRules && gs.aiCount === 1 && gs.currentSeat === 2;
+  const isAnySix      = gs.localRules ? (gs.dice1 === 6 || gs.dice2 === 6) : (gs.lastDice === 6);
   const isDoubleSix   = gs.localRules ? (gs.dice1 === 6 && gs.dice2 === 6) : (gs.lastDice === 6);
-  const isSixBonus    = canRollNow && isDoubleSix;
-  const isKillBonus   = canRollNow && gs.lastDice > 0 && !isDoubleSix;
+  const isSixBonus    = canRollNow && isAnySix;
+  const isKillBonus   = canRollNow && gs.lastDice > 0 && !isAnySix;
 
   let statusText = "";
   if (settling) {
@@ -467,7 +468,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
       : `${aiName} rolled ${aiDesc} — no move`;
   } else if (isMyTurn) {
     if (!gs.diceRolled) {
-      if (isSixBonus)         statusText = "Double 6 — bonus turn! Roll again";
+      if (isSixBonus)         statusText = isDoubleSix ? "Double 6 — bonus turn! Roll again" : "Rolled a 6 — bonus turn! Roll again";
       else if (isKillBonus)   statusText = "You killed — bonus turn! Roll again";
       else if (isSecondBoard) statusText = "Your 2nd board — roll!";
       else                    statusText = "Your turn — roll the dice";

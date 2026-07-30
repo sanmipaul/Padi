@@ -171,7 +171,7 @@ function applyMove(
 function aiPickPiece(pieces: AllPieces, seat: number, dice: number, state: GameState): number {
   const ts          = getTotalSeats(state);
   const bounceBack  = state.localRules;
-  const hasSix      = state.localRules ? (state.dice1 === 6 && state.dice2 === 6) : (dice === 6);
+  const hasSix      = state.localRules ? (state.dice1 === 6 || state.dice2 === 6) : (dice === 6);
   let best = 255, bestScore = -1;
   for (let p = 0; p < PIECES; p++) {
     const pos = pieces[seat][p];
@@ -211,7 +211,7 @@ function runAITurnsTracked(state: GameState): { dice: number; dice1: number; dic
     const d1   = rollOneDie();
     const d2   = state.localRules ? rollOneDie() : 0;
     const dice = state.localRules ? d1 + d2 : d1;
-    const hasSix = state.localRules ? (d1 === 6 && d2 === 6) : (d1 === 6);
+    const hasSix = state.localRules ? (d1 === 6 || d2 === 6) : (d1 === 6);
     state.dice1 = d1; state.dice2 = d2;
 
     if (firstDice === 0) { firstDice = dice; firstD1 = d1; firstD2 = d2; }
@@ -279,7 +279,7 @@ export function performMove(
 ): { state: GameState; valid: boolean; captured: boolean } {
   const activeSeat  = state.currentSeat;
   const bounceBack  = state.localRules;
-  const hasSix      = state.localRules ? (state.dice1 === 6 && state.dice2 === 6) : (state.lastDice === 6);
+  const hasSix      = state.localRules ? (state.dice1 === 6 || state.dice2 === 6) : (state.lastDice === 6);
   const doubleBoard = state.localRules && state.aiCount === 1;
 
   if (!state.diceRolled || !isPlayerSeat(activeSeat, state) || state.finished)

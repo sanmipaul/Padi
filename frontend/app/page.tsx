@@ -431,8 +431,8 @@ function CowriesOverlay({ cowries, streak, dailyClaimed, onClaim, onClose }: {
 /* ── Rules Overlay ───────────────────────────────────────────────── */
 const RULES = [
   { n: 1,  icon: "🎲", title: "Two dice every turn",           body: "Each turn you roll two dice. The sum is how far you move." },
-  { n: 2,  icon: "🔒", title: "Double 6 to leave the yard",   body: "A piece can only leave your home yard when you roll double 6 (both dice show 6)." },
-  { n: 3,  icon: "🔄", title: "Double 6 = bonus roll",        body: "Rolling double 6 earns you an extra roll immediately after moving." },
+  { n: 2,  icon: "🔒", title: "Roll a 6 to leave the yard",   body: "A piece can only leave your home yard when at least one of your dice shows a 6." },
+  { n: 3,  icon: "🔄", title: "Roll a 6 = bonus roll",        body: "Any time you roll a 6 (on either die), you earn an extra roll after moving." },
   { n: 4,  icon: "💥", title: "Kill = bonus roll",            body: "Landing on an opponent's piece sends it back to their yard — and earns you an extra roll." },
   { n: 5,  icon: "⭐", title: "Star squares are safe",        body: "Pieces on a starred (★) square cannot be captured. They're your safe haven." },
   { n: 6,  icon: "↩️", title: "Bounce-back in home stretch",  body: "In the last few squares before home, if your roll overshoots the finish, your piece bounces back." },
