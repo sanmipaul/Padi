@@ -12,7 +12,7 @@ import PvPGameBoard, { type PvpMeta } from "@/components/PvPGameBoard";
 import AuthModal from "@/components/AuthModal";
 
 type Screen = "onboarding" | "lobby" | "game" | "pvp" | "ranks" | "matchmaking";
-type Overlay = null | "win" | "lose" | "daily" | "cowries" | "profile" | "room";
+type Overlay = null | "win" | "lose" | "daily" | "cowries" | "profile" | "room" | "rules";
 
 interface ToastState { text: string; color: string }
 
@@ -428,6 +428,58 @@ function CowriesOverlay({ cowries, streak, dailyClaimed, onClaim, onClose }: {
   );
 }
 
+/* ── Rules Overlay ───────────────────────────────────────────────── */
+const RULES = [
+  { n: 1,  icon: "🎲", title: "Two dice every turn",           body: "Each turn you roll two dice. The sum is how far you move." },
+  { n: 2,  icon: "🔒", title: "Double 6 to leave the yard",   body: "A piece can only leave your home yard when you roll double 6 (both dice show 6)." },
+  { n: 3,  icon: "🔄", title: "Double 6 = bonus roll",        body: "Rolling double 6 earns you an extra roll immediately after moving." },
+  { n: 4,  icon: "💥", title: "Kill = bonus roll",            body: "Landing on an opponent's piece sends it back to their yard — and earns you an extra roll." },
+  { n: 5,  icon: "⭐", title: "Star squares are safe",        body: "Pieces on a starred (★) square cannot be captured. They're your safe haven." },
+  { n: 6,  icon: "↩️", title: "Bounce-back in home stretch",  body: "In the last few squares before home, if your roll overshoots the finish, your piece bounces back." },
+  { n: 7,  icon: "🏠", title: "Reach home exactly",           body: "A piece finishes when it lands exactly on the home square. Overshoot = bounce back." },
+  { n: 8,  icon: "♟️", title: "You control 2 boards",         body: "In a 1-vs-AI game you play two sets of pieces (teal + pink). Win by getting all 8 home first." },
+  { n: 9,  icon: "🤖", title: "AI opponents",                 body: "Chidi, Amaka, and Tunde each have their own style. Start with Chidi (1 AI) to learn the game." },
+  { n: 10, icon: "🏆", title: "First all-home wins",          body: "The first team to move all their pieces to the home square wins the round." },
+  { n: 11, icon: "🪙", title: "Earn cowries for winning",     body: "Every win earns cowries. Daily login streaks multiply your rewards. Stack them early." },
+];
+function RulesOverlay({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(5,5,9,.8)", backdropFilter: "blur(7px)", padding: "0 0 0" }}>
+      <motion.div initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+        style={{ width: "100%", maxWidth: 500, maxHeight: "88vh", background: "linear-gradient(180deg,rgba(22,22,34,.99),rgba(10,10,18,.99))", border: "1px solid rgba(255,255,255,.12)", borderRadius: "22px 22px 0 0", padding: "6px 0 0", boxShadow: "0 -20px 60px -16px rgba(0,0,0,.9)", display: "flex", flexDirection: "column" }}>
+
+        {/* drag pill */}
+        <div style={{ flexShrink: 0, display: "flex", justifyContent: "center", padding: "10px 0 14px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 99, background: "rgba(255,255,255,.18)" }} />
+        </div>
+
+        <div style={{ flexShrink: 0, padding: "0 22px 14px" }}>
+          <p style={{ margin: "0 0 2px", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 800, fontSize: 20 }}>How to play</p>
+          <p style={{ margin: 0, color: "#74748C", fontSize: 12.5 }}>Nigerian Ludo rules — simple and fast</p>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 22px 8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {RULES.map(({ n, icon, title, body }) => (
+              <div key={n} style={{ display: "flex", gap: 12, alignItems: "flex-start", background: "rgba(255,255,255,.04)", borderRadius: 13, padding: "11px 13px" }}>
+                <span style={{ flexShrink: 0, fontSize: 18, lineHeight: 1, marginTop: 1 }}>{icon}</span>
+                <div>
+                  <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#ECECF2", marginBottom: 2 }}>{n}. {title}</span>
+                  <span style={{ fontSize: 12, color: "#9C9CB6", lineHeight: 1.5 }}>{body}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ flexShrink: 0, padding: "12px 22px 28px" }}>
+          <button onClick={onClose} style={{ width: "100%", padding: 13, border: "none", borderRadius: 13, background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Got it — let&apos;s play!</button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 /* ── Profile Overlay ─────────────────────────────────────────────── */
 function ProfileOverlay({ address, isGuest, username, onSave, onDisconnect, onClose }: {
   address?: string; isGuest: boolean; username: string;
@@ -654,6 +706,7 @@ export default function Home() {
                       onEnterPvp={handleEnterPvp}
                       onOpenDaily={() => setOverlay("daily")}
                       onViewRanks={() => setScreen("ranks")}
+                      onHowToPlay={() => setOverlay("rules")}
                       showToast={showToast}
                     />
                   </motion.div>
@@ -702,6 +755,7 @@ export default function Home() {
             onDisconnect={() => { disconnect(); setOverlay(null); setScreen("onboarding"); }}
             onClose={() => setOverlay(null)} />
         )}
+        {overlay === "rules" && <RulesOverlay onClose={() => setOverlay(null)} />}
       </AnimatePresence>
     </div>
   );

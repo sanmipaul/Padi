@@ -66,8 +66,8 @@ function getCellBg(row: number, col: number, totalSeats: number): string {
   return "rgba(255,255,255,.04)";
 }
 
-function canMovePiece(rel: number, dice: number): boolean {
-  return isPieceMovable(rel, dice);
+function canMovePiece(rel: number, dice: number, hasSix = dice === 6, bounceBack = false): boolean {
+  return isPieceMovable(rel, dice, hasSix, bounceBack);
 }
 
 type PieceInfo = { seat: number; pieceIdx: number; rel: number };
@@ -96,12 +96,14 @@ function buildPieceMap(pieces: readonly (readonly number[])[], totalSeats: numbe
 }
 
 /* ─── Board Component ─────────────────────────────────────────────── */
-function Board({ pieces, totalSeats, currentPlayerSeat, canMove, dice, onMove }: {
+function Board({ pieces, totalSeats, currentPlayerSeat, canMove, dice, hasSix, bounceBack, onMove }: {
   pieces: readonly (readonly number[])[];
   totalSeats: number;
   currentPlayerSeat: number;
   canMove: boolean;
   dice: number;
+  hasSix: boolean;
+  bounceBack: boolean;
   onMove: (idx: number) => void;
 }) {
   const pieceMap = buildPieceMap(pieces, totalSeats);
@@ -118,9 +120,9 @@ function Board({ pieces, totalSeats, currentPlayerSeat, canMove, dice, onMove }:
       if (here && here.length > 0) {
         const top = here[here.length - 1];
         const col = COLORS[top.seat];
-        const movable = canMove && top.seat === currentPlayerSeat && canMovePiece(top.rel, dice);
+        const movable = canMove && top.seat === currentPlayerSeat && canMovePiece(top.rel, dice, hasSix, bounceBack);
         const clickIdx = movable
-          ? here.find((p) => p.seat === currentPlayerSeat && canMovePiece(p.rel, dice))?.pieceIdx ?? -1
+          ? here.find((p) => p.seat === currentPlayerSeat && canMovePiece(p.rel, dice, hasSix, bounceBack))?.pieceIdx ?? -1
           : -1;
         inner = (
           <button
@@ -220,13 +222,13 @@ function SeatsRow({ pieces, totalSeats, currentSeat, finished, names }: {
 }
 
 /* ─── Piece Buttons ──────────────────────────────────────────────── */
-function PiecesRow({ playerPieces, dice, onMove, color }: { playerPieces: readonly number[]; dice: number; onMove: (i: number) => void; color: string }) {
+function PiecesRow({ playerPieces, dice, hasSix, bounceBack, onMove, color }: { playerPieces: readonly number[]; dice: number; hasSix: boolean; bounceBack: boolean; onMove: (i: number) => void; color: string }) {
   const labels = (rel: number) => rel === 0 ? "Yard" : rel === FINISHED_POS ? "Home" : rel > 52 ? `Home ${rel - 52}` : `Sq ${rel}`;
   return (
     <div style={{ display: "flex", gap: "8px" }}>
       {Array.from({ length: 4 }, (_, i) => {
         const rel = Number(playerPieces[i] ?? 0);
-        const movable = canMovePiece(rel, dice);
+        const movable = canMovePiece(rel, dice, hasSix, bounceBack);
         return (
           <motion.button
             key={i}
@@ -271,10 +273,11 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
   const [gs, setGs]               = useState<GameState | null>(null);
   const [wager, setWager]         = useState<bigint>(0n);
   const [rolling, setRolling]     = useState(false);
-  const [dieFace, setDieFace]     = useState(6);
+  const [dieFace1, setDieFace1]   = useState(6);
+  const [dieFace2, setDieFace2]   = useState(6);
   const [aiSpeech, setAiSpeech]   = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
-  const [aiRolled, setAiRolled]   = useState<{ dice: number; moved: boolean; seat: number; capturedPlayer: boolean } | null>(null);
+  const [aiRolled, setAiRolled]   = useState<{ dice: number; dice1: number; dice2: number; moved: boolean; seat: number; capturedPlayer: boolean } | null>(null);
 
   const playerMoves = useRef<number[]>([]);
   const settledRef  = useRef(false);
@@ -330,7 +333,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
       const restoredPieces = Array.from({ length: 4 }, (_, s) =>
         Array.from({ length: 4 }, (_, p) => Number(chainPieces[s]?.[p] ?? 0))
       ) as AllPieces;
-      setGs({ pieces: restoredPieces, aiCount, currentSeat: chainSeat, lastDice: chainDice, diceRolled: chainRolled, finished: false, playerWon: null, localRules: false });
+      setGs({ pieces: restoredPieces, aiCount, currentSeat: chainSeat, lastDice: chainDice, dice1: 0, dice2: 0, diceRolled: chainRolled, finished: false, playerWon: null, localRules: false });
       return;
     }
 
@@ -358,11 +361,11 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     const aiSeat = gs.currentSeat;
     const delay = 700 + Math.random() * 400;
     const t = setTimeout(() => {
-      const { state: afterAI, aiDice, moved, capturedPlayer } = advanceAI(gs);
+      const { state: afterAI, aiDice, aiDice1, aiDice2, moved, capturedPlayer } = advanceAI(gs);
       saveGame(afterAI);
       setGs(afterAI);
       setAiThinking(false);
-      setAiRolled({ dice: aiDice, moved, seat: aiSeat, capturedPlayer });
+      setAiRolled({ dice: aiDice, dice1: aiDice1, dice2: aiDice2, moved, seat: aiSeat, capturedPlayer });
       setTimeout(() => {
         setAiRolled(null);
         if (capturedPlayer) {
@@ -431,7 +434,10 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
   const canMoveNow     = isMyTurn && gs.diceRolled && !aiThinking && !aiRolled;
   const playerPieces   = gs.pieces[gs.currentSeat];
   const playerColor    = COLORS[gs.currentSeat];
-  const displayFace    = aiRolled ? aiRolled.dice : gs.diceRolled ? gs.lastDice : dieFace;
+  const displayFace1   = gs.localRules
+    ? (aiRolled ? aiRolled.dice1 : gs.diceRolled ? gs.dice1 : dieFace1)
+    : (aiRolled ? aiRolled.dice  : gs.diceRolled ? gs.lastDice : dieFace1);
+  const displayFace2   = aiRolled ? aiRolled.dice2 : gs.diceRolled ? gs.dice2 : dieFace2;
   const settling       = settleSubmitting || settleWaiting;
 
   // Seat display names (double-board: seat 2 = "You (2)")
@@ -440,8 +446,9 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     : [...NAMES];
 
   const isSecondBoard = gs.localRules && gs.aiCount === 1 && gs.currentSeat === 2;
-  const isSixBonus    = canRollNow && gs.lastDice === 6;
-  const isKillBonus   = canRollNow && gs.lastDice > 0 && gs.lastDice < 6;
+  const isDoubleSix   = gs.localRules ? (gs.dice1 === 6 && gs.dice2 === 6) : (gs.lastDice === 6);
+  const isSixBonus    = canRollNow && isDoubleSix;
+  const isKillBonus   = canRollNow && gs.lastDice > 0 && !isDoubleSix;
 
   let statusText = "";
   if (settling) {
@@ -452,15 +459,25 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     statusText = `${seatNames[gs.currentSeat] ?? "AI"} is thinking…`;
   } else if (aiRolled) {
     const aiName = seatNames[aiRolled.seat] ?? "AI";
+    const aiDesc = gs.localRules && aiRolled.dice1 && aiRolled.dice2
+      ? (aiRolled.dice1 === aiRolled.dice2 ? `double ${aiRolled.dice1}` : `${aiRolled.dice} (${aiRolled.dice1}+${aiRolled.dice2})`)
+      : String(aiRolled.dice);
     statusText = aiRolled.moved
-      ? `${aiName} rolled ${aiRolled.dice} — moved!`
-      : `${aiName} rolled ${aiRolled.dice} — no move`;
+      ? `${aiName} rolled ${aiDesc} — moved!`
+      : `${aiName} rolled ${aiDesc} — no move`;
   } else if (isMyTurn) {
     if (!gs.diceRolled) {
-      if (isSixBonus)       statusText = "Rolled 6 — bonus turn! Roll again";
-      else if (isKillBonus) statusText = "You killed — bonus turn! Roll again";
+      if (isSixBonus)         statusText = "Double 6 — bonus turn! Roll again";
+      else if (isKillBonus)   statusText = "You killed — bonus turn! Roll again";
       else if (isSecondBoard) statusText = "Your 2nd board — roll!";
-      else                  statusText = "Your turn — roll the dice";
+      else                    statusText = "Your turn — roll the dice";
+    } else if (gs.localRules) {
+      const rollDesc = gs.dice1 === gs.dice2
+        ? `double ${gs.dice1}`
+        : `${gs.lastDice} (${gs.dice1}+${gs.dice2})`;
+      statusText = isSecondBoard
+        ? `Rolled ${rollDesc} — pick piece (2nd board)`
+        : `Rolled ${rollDesc} — pick a piece`;
     } else {
       statusText = isSecondBoard
         ? `Rolled ${gs.lastDice} — pick piece (2nd board)`
@@ -477,13 +494,17 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     let t = 0;
     const timer = setInterval(() => {
       t++;
-      setDieFace(1 + Math.floor(Math.random() * 6));
+      setDieFace1(1 + Math.floor(Math.random() * 6));
+      if (gs.localRules) setDieFace2(1 + Math.floor(Math.random() * 6));
       if (t >= 7) {
         clearInterval(timer);
-        const { state: next, dice } = performRoll(gs);
-        setDieFace(dice);
+        const { state: next, dice, dice1, dice2 } = performRoll(gs);
+        setDieFace1(dice1 || dice);
+        setDieFace2(dice2);
         setRolling(false);
-        if (!hasValidMove(next.pieces[next.currentSeat], dice)) {
+        const rollHasSix  = gs.localRules ? (dice1 === 6 && dice2 === 6) : (dice === 6);
+        const rollBounce  = gs.localRules;
+        if (!hasValidMove(next.pieces[next.currentSeat], dice, rollHasSix, rollBounce)) {
           // No valid move — record skip, show dice briefly then let AI run
           playerMoves.current.push(255);
           const skipped = skipTurn(next);
@@ -567,6 +588,8 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
             currentPlayerSeat={gs.currentSeat}
             canMove={canMoveNow}
             dice={gs.lastDice}
+            hasSix={isDoubleSix}
+            bounceBack={gs.localRules}
             onMove={doMove}
           />
         </motion.div>
@@ -575,7 +598,10 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
       {/* BOTTOM */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", borderRadius: "16px", padding: "11px 13px" }}>
-          <Die face={displayFace} rolling={rolling} />
+          <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+            <Die face={displayFace1} rolling={rolling} />
+            {gs.localRules && <Die face={displayFace2} rolling={rolling} />}
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#ECECF2", lineHeight: 1.3 }}>{statusText}</p>
             {!gs.finished && !settling && (
@@ -601,7 +627,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
                 Tap a glowing piece — on the board or below
                 {isSecondBoard && <span style={{ color: COLORS[2], marginLeft: "6px" }}>(2nd board)</span>}
               </p>
-              <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} onMove={doMove} color={playerColor} />
+              <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} hasSix={isDoubleSix} bounceBack={gs.localRules} onMove={doMove} color={playerColor} />
             </motion.div>
           )}
         </AnimatePresence>

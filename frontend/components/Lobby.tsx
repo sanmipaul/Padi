@@ -23,6 +23,7 @@ interface LobbyProps {
   onEnterPvp: (gameId: bigint, mySeat: 0 | 1, wager: bigint, opponent: string) => void;
   onOpenDaily: () => void;
   onViewRanks: () => void;
+  onHowToPlay: () => void;
   showToast: (text: string, color: string) => void;
 }
 
@@ -40,7 +41,7 @@ function Spinner() {
 
 export default function Lobby({
   cowries, streak, localWins, winStreak, gamesPlayed = 0, dailyClaimed, initialJoinId,
-  onEnterGame, onEnterLocalGame, onEnterPvp, onOpenDaily, onViewRanks, showToast,
+  onEnterGame, onEnterLocalGame, onEnterPvp, onOpenDaily, onViewRanks, onHowToPlay, showToast,
 }: LobbyProps) {
   const { address } = useAccount();
   const contract = PADI_ADDRESS;
@@ -225,9 +226,14 @@ export default function Lobby({
       </AnimatePresence>
 
       {/* Header */}
-      <div>
-        <h1 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(24px,4vw,30px)", letterSpacing: -1, margin: "0 0 4px" }}>Your parlour</h1>
-        <p style={{ color: "#74748C", fontSize: 14, margin: 0 }}>Pick your game mode and roll the dice.</p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+        <div>
+          <h1 style={{ fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "clamp(24px,4vw,30px)", letterSpacing: -1, margin: "0 0 4px" }}>Your parlour</h1>
+          <p style={{ color: "#74748C", fontSize: 14, margin: 0 }}>Pick your game mode and roll the dice.</p>
+        </div>
+        <button onClick={onHowToPlay} style={{ flexShrink: 0, marginTop: 4, padding: "6px 12px", borderRadius: 999, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", color: "#9C9CB6", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+          How to play
+        </button>
       </div>
 
       {/* Prize banner + daily in a row on wider screens */}
