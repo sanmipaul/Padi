@@ -404,7 +404,7 @@ function CowriesOverlay({ cowries, streak, dailyClaimed, onClaim, onClose }: {
             { icon: "★", color: "#34E0C4", label: "Win matches", text: "Every game you win earns you cowries. The higher your streak, the bigger the haul." },
             { icon: "↑", color: "#FFB23E", label: "Daily streak", text: "Claim cowries every day to keep your streak alive. Miss a day and it resets." },
             { icon: "⊕", color: "#8B7CFF", label: "Leaderboard", text: "Your cowrie count puts you on the global leaderboard — climb it and flex on other padis." },
-            { icon: "○", color: "#FF5C8A", label: "No cash value", text: "Cowries are for bragging rights only. They can't be bought, sold, or withdrawn." },
+            { icon: "◎", color: "#FF5C8A", label: "Real value — coming soon", text: "Cowries will unlock board skins, new padi opponents, and more. Stack them now before rewards go live." },
           ].map(({ icon, color, label, text }) => (
             <div key={label} style={{ display: "flex", gap: 11, alignItems: "flex-start", background: "rgba(255,255,255,.04)", borderRadius: 13, padding: "11px 12px" }}>
               <span style={{ color, fontWeight: 800, fontSize: 15, flexShrink: 0, width: 18, textAlign: "center", marginTop: 1 }}>{icon}</span>
