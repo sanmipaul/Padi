@@ -503,7 +503,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
         setDieFace1(dice1 || dice);
         setDieFace2(dice2);
         setRolling(false);
-        const rollHasSix  = gs.localRules ? (dice1 === 6 && dice2 === 6) : (dice === 6);
+        const rollHasSix  = gs.localRules ? (dice1 === 6 || dice2 === 6) : (dice === 6);
         const rollBounce  = gs.localRules;
         if (!hasValidMove(next.pieces[next.currentSeat], dice, rollHasSix, rollBounce)) {
           // No valid move — record skip, show dice briefly then let AI run
@@ -589,7 +589,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
             currentPlayerSeat={gs.currentSeat}
             canMove={canMoveNow}
             dice={gs.lastDice}
-            hasSix={isDoubleSix}
+            hasSix={isAnySix}
             bounceBack={gs.localRules}
             onMove={doMove}
           />
@@ -628,7 +628,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
                 Tap a glowing piece — on the board or below
                 {isSecondBoard && <span style={{ color: COLORS[2], marginLeft: "6px" }}>(2nd board)</span>}
               </p>
-              <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} hasSix={isDoubleSix} bounceBack={gs.localRules} onMove={doMove} color={playerColor} />
+              <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} hasSix={isAnySix} bounceBack={gs.localRules} onMove={doMove} color={playerColor} />
             </motion.div>
           )}
         </AnimatePresence>
