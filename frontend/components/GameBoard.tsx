@@ -7,7 +7,7 @@ import { PADI_ADDRESS, PADI_ABI } from "@/lib/contracts";
 import { BOARD_PATH, homeStretchCoords, yardCoords } from "@/lib/ludo";
 import {
   createInitialState, performRoll, performMove, skipTurn, advanceAI,
-  hasValidMove, isPieceMovable, isAllFinished,
+  hasValidMove, isPieceMovable, isAllFinished, getTotalSeats, isPlayerSeat,
   type GameState, type AllPieces,
   FINISHED_POS,
 } from "@/lib/game-engine";
@@ -96,9 +96,10 @@ function buildPieceMap(pieces: readonly (readonly number[])[], totalSeats: numbe
 }
 
 /* ─── Board Component ─────────────────────────────────────────────── */
-function Board({ pieces, totalSeats, canMove, dice, onMove }: {
+function Board({ pieces, totalSeats, currentPlayerSeat, canMove, dice, onMove }: {
   pieces: readonly (readonly number[])[];
   totalSeats: number;
+  currentPlayerSeat: number;
   canMove: boolean;
   dice: number;
   onMove: (idx: number) => void;
@@ -117,8 +118,10 @@ function Board({ pieces, totalSeats, canMove, dice, onMove }: {
       if (here && here.length > 0) {
         const top = here[here.length - 1];
         const col = COLORS[top.seat];
-        const movable = canMove && top.seat === 0 && canMovePiece(top.rel, dice);
-        const clickIdx = movable ? here.find((p) => p.seat === 0 && canMovePiece(p.rel, dice))?.pieceIdx ?? -1 : -1;
+        const movable = canMove && top.seat === currentPlayerSeat && canMovePiece(top.rel, dice);
+        const clickIdx = movable
+          ? here.find((p) => p.seat === currentPlayerSeat && canMovePiece(p.rel, dice))?.pieceIdx ?? -1
+          : -1;
         inner = (
           <button
             onClick={movable && clickIdx >= 0 ? () => onMove(clickIdx) : undefined}
@@ -173,11 +176,12 @@ function Die({ face, rolling }: { face: number; rolling: boolean }) {
 }
 
 /* ─── Seats Display ──────────────────────────────────────────────── */
-function SeatsRow({ pieces, totalSeats, currentSeat, finished }: {
+function SeatsRow({ pieces, totalSeats, currentSeat, finished, names }: {
   pieces: readonly (readonly number[])[];
   totalSeats: number;
   currentSeat: number;
   finished: boolean;
+  names: string[];
 }) {
   return (
     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -192,6 +196,7 @@ function SeatsRow({ pieces, totalSeats, currentSeat, finished }: {
           : onBoard > 0 || atHome > 0
           ? [onBoard > 0 ? `${onBoard} active` : "", atHome > 0 ? `${atHome} home` : ""].filter(Boolean).join(" · ")
           : `${inYard} in yard`;
+        const name = names[s] ?? NAMES[s] ?? "AI";
         return (
           <motion.div
             key={s}
@@ -201,10 +206,10 @@ function SeatsRow({ pieces, totalSeats, currentSeat, finished }: {
             style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 13px 7px 7px", borderRadius: "999px", background: active ? alpha(COLORS[s], 0.17) : "rgba(255,255,255,.04)", border: `1px solid ${active ? COLORS[s] : "rgba(255,255,255,.09)"}` }}
           >
             <div style={{ width: "27px", height: "27px", borderRadius: "50%", background: `radial-gradient(circle at 35% 30%,rgba(255,255,255,.65),${COLORS[s]} 62%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", boxShadow: active ? `0 0 11px ${COLORS[s]}` : "none" }}>
-              {NAMES[s][0]}
+              {name[0]}
             </div>
             <div style={{ lineHeight: 1.15 }}>
-              <span style={{ display: "block", fontSize: "12px", fontWeight: 700, color: active ? "#ECECF2" : "#9C9CB6" }}>{NAMES[s]}</span>
+              <span style={{ display: "block", fontSize: "12px", fontWeight: 700, color: active ? "#ECECF2" : "#9C9CB6" }}>{name}</span>
               <span style={{ display: "block", fontSize: "10px", color: atHome === 4 ? "#34E0C4" : onBoard > 0 ? "#FFB23E" : "#4A4A5C" }}>{subLabel}</span>
             </div>
           </motion.div>
@@ -215,7 +220,7 @@ function SeatsRow({ pieces, totalSeats, currentSeat, finished }: {
 }
 
 /* ─── Piece Buttons ──────────────────────────────────────────────── */
-function PiecesRow({ playerPieces, dice, onMove }: { playerPieces: readonly number[]; dice: number; onMove: (i: number) => void }) {
+function PiecesRow({ playerPieces, dice, onMove, color }: { playerPieces: readonly number[]; dice: number; onMove: (i: number) => void; color: string }) {
   const labels = (rel: number) => rel === 0 ? "Yard" : rel === FINISHED_POS ? "Home" : rel > 52 ? `Home ${rel - 52}` : `Sq ${rel}`;
   return (
     <div style={{ display: "flex", gap: "8px" }}>
@@ -232,7 +237,7 @@ function PiecesRow({ playerPieces, dice, onMove }: { playerPieces: readonly numb
             transition={{ duration: 0.28, delay: i * 0.06, ease: "easeOut" }}
             whileHover={movable ? { scale: 1.05 } : {}}
             whileTap={movable ? { scale: 0.93 } : {}}
-            style={{ flex: 1, padding: "11px 4px", borderRadius: "13px", cursor: movable ? "pointer" : "default", background: movable ? "linear-gradient(135deg,#8B7CFF,#5C6BFF)" : "rgba(255,255,255,.04)", color: movable ? "#fff" : "#4A4A5C", fontWeight: 700, border: movable ? "none" : "1px solid rgba(255,255,255,.08)", boxShadow: movable ? "0 8px 18px -8px rgba(123,97,255,.8)" : "none", animation: movable ? "glowPulse 1.6s infinite" : "none" }}
+            style={{ flex: 1, padding: "11px 4px", borderRadius: "13px", cursor: movable ? "pointer" : "default", background: movable ? `linear-gradient(135deg,${color},${color}bb)` : "rgba(255,255,255,.04)", color: movable ? "#fff" : "#4A4A5C", fontWeight: 700, border: movable ? "none" : "1px solid rgba(255,255,255,.08)", boxShadow: movable ? `0 8px 18px -8px ${color}cc` : "none", animation: movable ? "glowPulse 1.6s infinite" : "none" }}
           >
             <div style={{ fontSize: "10px", opacity: movable ? 0.75 : 0.4, fontWeight: 600 }}>Piece {i + 1}</div>
             <div style={{ fontSize: "14px", marginTop: "2px" }}>{labels(rel)}</div>
@@ -246,7 +251,7 @@ function PiecesRow({ playerPieces, dice, onMove }: { playerPieces: readonly numb
 /* ─── Main Component ─────────────────────────────────────────────── */
 export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, showToast }: {
   gameId: bigint;
-  localAiCount?: number;       // set for guest/local games (gameId === 0n)
+  localAiCount?: number;
   onBack: () => void;
   onGameEnd: (won: boolean) => void;
   showToast: (text: string, color: string) => void;
@@ -255,7 +260,6 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
   const contract = PADI_ADDRESS;
   const isLocalGame = gameId === 0n && localAiCount != null;
 
-  // Fetch game meta exactly once to get aiCount + wager (skipped for local games)
   const { data: gameMeta } = useReadContract({
     address: contract,
     abi: PADI_ABI,
@@ -264,25 +268,20 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     query: { enabled: !isLocalGame, refetchInterval: false },
   });
 
-  // Local client-side game state
   const [gs, setGs]               = useState<GameState | null>(null);
   const [wager, setWager]         = useState<bigint>(0n);
   const [rolling, setRolling]     = useState(false);
   const [dieFace, setDieFace]     = useState(6);
   const [aiSpeech, setAiSpeech]   = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
-  const [aiRolled, setAiRolled]   = useState<{ dice: number; moved: boolean } | null>(null);
+  const [aiRolled, setAiRolled]   = useState<{ dice: number; moved: boolean; seat: number; capturedPlayer: boolean } | null>(null);
 
-  // Piece choices recorded per player turn (including 255 for skip turns).
-  // Padded to 100 entries when submitting so on-chain game always completes.
   const playerMoves = useRef<number[]>([]);
   const settledRef  = useRef(false);
 
-  // Settlement transaction
   const { writeContract: settle, data: settleTx, isPending: settleSubmitting } = useWriteContract();
   const { isLoading: settleWaiting, isSuccess: settleSuccess, isError: settleError } = useWaitForTransactionReceipt({ hash: settleTx });
 
-  // Fetch final game state after settlement to get on-chain winner
   const [shouldFetchFinal, setShouldFetchFinal] = useState(false);
   const { data: finalGame, refetch: refetchFinal } = useReadContract({
     address: contract,
@@ -292,53 +291,52 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     query: { enabled: shouldFetchFinal, refetchInterval: false },
   });
 
-  // ── Initialize local state from chain meta ──────────────────────
+  // ── Initialize ──────────────────────────────────────────────────
   useEffect(() => {
     if (gs) return;
-    // Local/guest game — skip contract entirely
-    if (isLocalGame) { setGs(createInitialState(localAiCount!)); return; }
+    if (isLocalGame) {
+      // Local game: enable local rules (double-board for 1 AI, extra turn for 6)
+      setGs(createInitialState(localAiCount!, true));
+      return;
+    }
     if (!gameMeta) return;
     const [, chainPieces, aiCount, chainSeat, chainDice, chainRolled, chainState, w, chainWinner] = gameMeta as unknown as [
       `0x${string}`, readonly (readonly number[])[], number, number, number, boolean, number, bigint, `0x${string}`
     ];
     setWager(w);
 
-    // Game already finished on-chain — show result immediately
     if (chainState === 1) {
       const won = chainWinner?.toLowerCase() === address?.toLowerCase();
-      setGs({ ...createInitialState(aiCount), finished: true, playerWon: won });
+      setGs({ ...createInitialState(aiCount, false), finished: true, playerWon: won });
       return;
     }
 
-    // Check localStorage for a saved mid-game session
     const saveKey = `padi:gs:${gameId.toString()}`;
     const raw = typeof window !== "undefined" ? localStorage.getItem(saveKey) : null;
     if (raw) {
       try {
         const saved = JSON.parse(raw);
-        setGs(saved.gs as GameState);
+        const savedGs = { ...saved.gs, localRules: false } as GameState;
+        setGs(savedGs);
         playerMoves.current = saved.moves ?? [];
+        // Resume AI if it's mid-turn
+        if (!isPlayerSeat(savedGs.currentSeat, savedGs)) setAiThinking(true);
         return;
       } catch { localStorage.removeItem(saveKey); }
     }
 
-    // Restore from on-chain piece positions if any pieces have moved (old-arch game)
     const chainFlat = (chainPieces as readonly (readonly number[])[]).flatMap(r => r).map(Number);
     if (chainFlat.some(p => p > 0)) {
       const restoredPieces = Array.from({ length: 4 }, (_, s) =>
         Array.from({ length: 4 }, (_, p) => Number(chainPieces[s]?.[p] ?? 0))
       ) as AllPieces;
-      setGs({ pieces: restoredPieces, aiCount, currentSeat: chainSeat, lastDice: chainDice, diceRolled: chainRolled, finished: false, playerWon: null });
+      setGs({ pieces: restoredPieces, aiCount, currentSeat: chainSeat, lastDice: chainDice, diceRolled: chainRolled, finished: false, playerWon: null, localRules: false });
       return;
     }
 
-    // Brand-new game — start client-side from scratch
-    setGs(createInitialState(aiCount));
+    setGs(createInitialState(aiCount, false));
   }, [gameMeta, gs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Persist mid-game state to localStorage ──────────────────────
-  // Saves are written synchronously inside doRoll / doMove so they
-  // are guaranteed before the user can navigate away.
   function saveGame(state: GameState) {
     try {
       localStorage.setItem(
@@ -348,43 +346,44 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     } catch {}
   }
 
-  // Clear the save once the game finishes.
   useEffect(() => {
     if (!gs?.finished) return;
     localStorage.removeItem(`padi:gs:${gameId.toString()}`);
   }, [gs?.finished, gameId]);
 
-  // AI thinking — runs after player moves, with a visible delay + dice reveal
+  // AI thinking effect — fires when aiThinking=true, runs one AI batch with delay
   useEffect(() => {
     if (!aiThinking || !gs) return;
     if (gs.finished) { setAiThinking(false); return; }
+    const aiSeat = gs.currentSeat;
     const delay = 700 + Math.random() * 400;
     const t = setTimeout(() => {
-      const { state: afterAI, aiDice, moved } = advanceAI(gs);
+      const { state: afterAI, aiDice, moved, capturedPlayer } = advanceAI(gs);
       saveGame(afterAI);
       setGs(afterAI);
       setAiThinking(false);
-      setAiRolled({ dice: aiDice, moved });
-      // Show Chidi's roll result for 900ms then hand back to player
-      setTimeout(() => setAiRolled(null), 900);
+      setAiRolled({ dice: aiDice, moved, seat: aiSeat, capturedPlayer });
+      setTimeout(() => {
+        setAiRolled(null);
+        if (capturedPlayer) {
+          showToast(`${NAMES[aiSeat] ?? "AI"} sent your piece home!`, "#FF5C8A");
+        }
+      }, 900);
     }, delay);
     return () => clearTimeout(t);
   }, [aiThinking]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Settlement triggers ─────────────────────────────────────────
+  // ── Settlement ──────────────────────────────────────────────────
   useEffect(() => {
     if (!gs?.finished || settledRef.current) return;
     settledRef.current = true;
-
     if (wager === 0n) {
-      // Free game: no on-chain settlement needed
       const won = gs.playerWon ?? false;
       if (won) showToast("You won! Great game.", "#34E0C4");
       else showToast("AI padi wins this round.", "#FF5C8A");
       setTimeout(() => onGameEnd(won), 1200);
       return;
     }
-    // Wager game: submit all moves padded to 100 entries so on-chain game finishes
     const moves = [...playerMoves.current, ...new Array(100).fill(0)].slice(0, 100);
     settle({
       address: contract,
@@ -392,19 +391,17 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
       functionName: "completeBatch",
       args: [gameId, moves as unknown as readonly number[]],
     });
-  }, [gs?.finished]);
+  }, [gs?.finished]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (settleError) {
-      showToast("Settlement failed — try again.", "#FF5C8A");
-    }
-  }, [settleError]);
+    if (settleError) showToast("Settlement failed — try again.", "#FF5C8A");
+  }, [settleError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!settleSuccess) return;
     setShouldFetchFinal(true);
     refetchFinal();
-  }, [settleSuccess]);
+  }, [settleSuccess]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!finalGame || !settleSuccess) return;
@@ -415,9 +412,9 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     if (won) showToast("You won the wager!", "#34E0C4");
     else showToast("AI wins the wager.", "#FF5C8A");
     onGameEnd(won);
-  }, [finalGame, settleSuccess]);
+  }, [finalGame, settleSuccess]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Loading spinner ─────────────────────────────────────────────
+  // ── Loading ─────────────────────────────────────────────────────
   if (!gs) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "200px", gap: "12px" }}>
@@ -427,30 +424,50 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     );
   }
 
-  // ── Derived state ───────────────────────────────────────────────
-  const totalSeats  = 1 + gs.aiCount;
-  const isMyTurn    = gs.currentSeat === 0 && !gs.finished;
-  const canRollNow  = isMyTurn && !gs.diceRolled && !rolling && !aiThinking && !aiRolled;
-  const canMoveNow  = isMyTurn && gs.diceRolled && !aiThinking && !aiRolled;
-  const playerPieces = gs.pieces[0];
-  const displayFace  = aiRolled ? aiRolled.dice : gs.diceRolled ? gs.lastDice : dieFace;
-  const settling     = settleSubmitting || settleWaiting;
+  // ── Derived state ────────────────────────────────────────────────
+  const totalSeats     = getTotalSeats(gs);
+  const isMyTurn       = isPlayerSeat(gs.currentSeat, gs) && !gs.finished;
+  const canRollNow     = isMyTurn && !gs.diceRolled && !rolling && !aiThinking && !aiRolled;
+  const canMoveNow     = isMyTurn && gs.diceRolled && !aiThinking && !aiRolled;
+  const playerPieces   = gs.pieces[gs.currentSeat];
+  const playerColor    = COLORS[gs.currentSeat];
+  const displayFace    = aiRolled ? aiRolled.dice : gs.diceRolled ? gs.lastDice : dieFace;
+  const settling       = settleSubmitting || settleWaiting;
+
+  // Seat display names (double-board: seat 2 = "You (2)")
+  const seatNames: string[] = gs.localRules && gs.aiCount === 1
+    ? ["You", "Chidi", "You (2)", "Tunde"]
+    : [...NAMES];
+
+  const isSecondBoard = gs.localRules && gs.aiCount === 1 && gs.currentSeat === 2;
+  const isBonusTurn   = canRollNow && gs.lastDice === 6;
 
   let statusText = "";
   if (settling) {
     statusText = settleSubmitting ? "Check your wallet…" : "Settling on chain…";
   } else if (gs.finished) {
-    statusText = wager > 0n ? "Settling wager on chain…" : gs.playerWon ? "You win! 🎉" : "AI padi wins";
+    statusText = wager > 0n ? "Settling wager on chain…" : gs.playerWon ? "You win!" : "AI padi wins";
   } else if (aiThinking) {
-    statusText = `${NAMES[1]} is thinking…`;
+    statusText = `${seatNames[gs.currentSeat] ?? "AI"} is thinking…`;
   } else if (aiRolled) {
+    const aiName = seatNames[aiRolled.seat] ?? "AI";
     statusText = aiRolled.moved
-      ? `${NAMES[1]} rolled ${aiRolled.dice} — moved!`
-      : `${NAMES[1]} rolled ${aiRolled.dice} — no move`;
+      ? `${aiName} rolled ${aiRolled.dice} — moved!`
+      : `${aiName} rolled ${aiRolled.dice} — no move`;
   } else if (isMyTurn) {
-    statusText = canRollNow ? "Your turn — roll the dice" : `Rolled ${gs.lastDice} — pick a piece`;
+    if (!gs.diceRolled) {
+      statusText = isBonusTurn
+        ? "Rolled 6 — bonus turn! Roll again"
+        : isSecondBoard
+        ? "Your 2nd board — roll!"
+        : "Your turn — roll the dice";
+    } else {
+      statusText = isSecondBoard
+        ? `Rolled ${gs.lastDice} — pick piece (2nd board)`
+        : `Rolled ${gs.lastDice} — pick a piece`;
+    }
   } else {
-    statusText = `${NAMES[gs.currentSeat] ?? "AI"} is thinking…`;
+    statusText = `${seatNames[gs.currentSeat] ?? "AI"} is thinking…`;
   }
 
   // ── Handlers ────────────────────────────────────────────────────
@@ -466,14 +483,14 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
         const { state: next, dice } = performRoll(gs);
         setDieFace(dice);
         setRolling(false);
-        if (!hasValidMove(next.pieces[0], dice)) {
-          // No valid move — record skip, show dice for 900ms then let AI run
+        if (!hasValidMove(next.pieces[next.currentSeat], dice)) {
+          // No valid move — record skip, show dice briefly then let AI run
           playerMoves.current.push(255);
           const skipped = skipTurn(next);
           setGs(next);
           setTimeout(() => {
             setGs(skipped);
-            setAiThinking(true);
+            if (!isPlayerSeat(skipped.currentSeat, skipped)) setAiThinking(true);
           }, 900);
         } else {
           saveGame(next);
@@ -490,7 +507,11 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
     playerMoves.current.push(pieceIdx);
     saveGame(next);
     setGs(next);
-    if (!next.finished) setAiThinking(true);
+    // Trigger AI only when the next seat is not controlled by the player
+    if (!next.finished && !isPlayerSeat(next.currentSeat, next)) {
+      setAiThinking(true);
+    }
+    // If extra turn (rolled 6, local rules): currentSeat stays, isPlayerSeat=true → no AI
     if (captured) {
       const rand = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)] ?? "";
       const speech = rand(AI_TALK.capture[1] ?? []);
@@ -502,7 +523,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
   return (
     <div style={{ height: "100%", display: "grid", gridTemplateRows: "auto 1fr auto", gap: "10px", overflow: "hidden" }}>
 
-      {/* TOP — header + seats + speech */}
+      {/* TOP */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <button onClick={onBack} style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#9C9CB6", fontSize: "13px", fontWeight: 600, borderRadius: "999px", padding: "7px 13px", cursor: "pointer" }}>
@@ -518,7 +539,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
           </div>
         </div>
 
-        <SeatsRow pieces={gs.pieces} totalSeats={totalSeats} currentSeat={gs.currentSeat} finished={gs.finished} />
+        <SeatsRow pieces={gs.pieces} totalSeats={totalSeats} currentSeat={gs.currentSeat} finished={gs.finished} names={seatNames} />
 
         <AnimatePresence>
           {aiSpeech && (
@@ -532,7 +553,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
         </AnimatePresence>
       </div>
 
-      {/* MIDDLE — board fills remaining height */}
+      {/* MIDDLE — board */}
       <div style={{ minHeight: 0, display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -540,11 +561,18 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           style={{ height: "100%", maxWidth: "100%", aspectRatio: "1 / 1" }}
         >
-          <Board pieces={gs.pieces} totalSeats={totalSeats} canMove={canMoveNow} dice={gs.lastDice} onMove={doMove} />
+          <Board
+            pieces={gs.pieces}
+            totalSeats={totalSeats}
+            currentPlayerSeat={gs.currentSeat}
+            canMove={canMoveNow}
+            dice={gs.lastDice}
+            onMove={doMove}
+          />
         </motion.div>
       </div>
 
-      {/* BOTTOM — dice row + piece picker + game over */}
+      {/* BOTTOM */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.09)", borderRadius: "16px", padding: "11px 13px" }}>
           <Die face={displayFace} rolling={rolling} />
@@ -556,7 +584,7 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
           </div>
           {canRollNow ? (
             <motion.button onClick={doRoll} whileTap={{ scale: 0.93 }}
-              style={{ flexShrink: 0, padding: "11px 18px", border: "none", borderRadius: "13px", background: "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "15px", cursor: "pointer", boxShadow: "0 10px 22px -8px rgba(123,97,255,.8)", animation: "glowPulse 1.8s infinite" }}>
+              style={{ flexShrink: 0, padding: "11px 18px", border: "none", borderRadius: "13px", background: isBonusTurn ? `linear-gradient(135deg,#FFB23E,#FF8C00)` : "linear-gradient(135deg,#8B7CFF,#5C6BFF)", color: "#fff", fontFamily: "var(--font-space),'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "15px", cursor: "pointer", boxShadow: isBonusTurn ? "0 10px 22px -8px rgba(255,178,62,.8)" : "0 10px 22px -8px rgba(123,97,255,.8)", animation: "glowPulse 1.8s infinite" }}>
               Roll
             </motion.button>
           ) : (
@@ -569,8 +597,11 @@ export default function GameBoard({ gameId, localAiCount, onBack, onGameEnd, sho
         <AnimatePresence>
           {canMoveNow && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.22, ease: "easeOut" }}>
-              <p style={{ margin: "0 0 6px", color: "#74748C", fontSize: "11px", fontWeight: 600 }}>Tap a glowing piece — on the board or below</p>
-              <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} onMove={doMove} />
+              <p style={{ margin: "0 0 6px", color: "#74748C", fontSize: "11px", fontWeight: 600 }}>
+                Tap a glowing piece — on the board or below
+                {isSecondBoard && <span style={{ color: COLORS[2], marginLeft: "6px" }}>(2nd board)</span>}
+              </p>
+              <PiecesRow playerPieces={playerPieces} dice={gs.lastDice} onMove={doMove} color={playerColor} />
             </motion.div>
           )}
         </AnimatePresence>

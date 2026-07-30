@@ -1,5 +1,6 @@
-// Client-side Ludo game engine — mirrors Padi.sol logic exactly
-// so the browser can play the full game without any on-chain calls.
+// Client-side Ludo game engine
+// Local-rules mode: double-board (aiCount=1 → player owns seats 0&2, AI owns 1&3),
+// rolling 6 grants an extra turn (max 2 extras before forced advance).
 
 export const BOARD_SIZE   = 52;
 export const FINISHED_POS = 59;
@@ -19,11 +20,25 @@ export interface GameState {
   diceRolled:  boolean;
   finished:    boolean;
   playerWon:   boolean | null;
+  localRules:  boolean;   // enables double-board + extra turn for 6
+}
+
+// ── Seat helpers ──────────────────────────────────────────────────────────
+
+/** Total seats on the board (4 for 2-player double-board, 1+aiCount otherwise). */
+export function getTotalSeats(state: GameState): number {
+  return state.localRules && state.aiCount === 1 ? 4 : 1 + state.aiCount;
+}
+
+/** Returns true if `seat` is controlled by the human player. */
+export function isPlayerSeat(seat: number, state: GameState): boolean {
+  if (state.localRules && state.aiCount === 1) return seat === 0 || seat === 2;
+  return seat === 0;
 }
 
 // ── Construction ──────────────────────────────────────────────────────────
 
-export function createInitialState(aiCount: number): GameState {
+export function createInitialState(aiCount: number, localRules = false): GameState {
   return {
     pieces:      [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
     aiCount,
@@ -32,6 +47,7 @@ export function createInitialState(aiCount: number): GameState {
     diceRolled:  false,
     finished:    false,
     playerWon:   null,
+    localRules,
   };
 }
 
@@ -41,7 +57,7 @@ export function rollDice(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-// ── Position helpers (mirror Solidity _globalPos / _isSafe) ──────────────
+// ── Position helpers ──────────────────────────────────────────────────────
 
 export function globalPos(seat: number, relPos: number): number {
   if (relPos === 0 || relPos > BOARD_SIZE) return relPos;
@@ -70,6 +86,20 @@ export function isAllFinished(pieces: PieceRow): boolean {
   return pieces.every(p => p === FINISHED_POS);
 }
 
+// ── Win checks ────────────────────────────────────────────────────────────
+
+function isPlayerTeamWon(pieces: AllPieces, state: GameState): boolean {
+  if (state.localRules && state.aiCount === 1)
+    return isAllFinished(pieces[0]) && isAllFinished(pieces[2]);
+  return isAllFinished(pieces[0]);
+}
+
+function isAITeamWon(pieces: AllPieces, seat: number, state: GameState): boolean {
+  if (state.localRules && state.aiCount === 1)
+    return isAllFinished(pieces[1]) && isAllFinished(pieces[3]);
+  return isAllFinished(pieces[seat]);
+}
+
 // ── Internals ─────────────────────────────────────────────────────────────
 
 function deepCopy(state: GameState): GameState {
@@ -79,8 +109,8 @@ function deepCopy(state: GameState): GameState {
   };
 }
 
-function capture(pieces: AllPieces, attackerSeat: number, gPos: number, totalSeats: number): void {
-  for (let s = 0; s < totalSeats; s++) {
+function capture(pieces: AllPieces, attackerSeat: number, gPos: number, ts: number): void {
+  for (let s = 0; s < ts; s++) {
     if (s === attackerSeat) continue;
     for (let p = 0; p < PIECES; p++) {
       const pos = pieces[s][p];
@@ -90,29 +120,32 @@ function capture(pieces: AllPieces, attackerSeat: number, gPos: number, totalSea
   }
 }
 
-function applyMove(pieces: AllPieces, seat: number, idx: number, newPos: number, totalSeats: number): void {
+function applyMove(pieces: AllPieces, seat: number, idx: number, newPos: number, ts: number): void {
   pieces[seat][idx] = newPos;
   if (newPos >= 1 && newPos <= BOARD_SIZE) {
     const gPos = globalPos(seat, newPos);
-    if (!isSafeSquare(gPos)) capture(pieces, seat, gPos, totalSeats);
+    if (!isSafeSquare(gPos)) capture(pieces, seat, gPos, ts);
   }
 }
 
-function aiPickPiece(pieces: AllPieces, seat: number, dice: number): number {
+function aiPickPiece(pieces: AllPieces, seat: number, dice: number, state: GameState): number {
+  const ts = getTotalSeats(state);
   let best = 255, bestScore = -1;
   for (let p = 0; p < PIECES; p++) {
     const pos = pieces[seat][p];
     if (!isPieceMovable(pos, dice)) continue;
     const newPos = pos === AT_BASE ? 1 : pos + dice;
-    // Home-stretch pieces score highest, board pieces score by distance, yard last
     let score = pos === AT_BASE ? 1 : pos > BOARD_SIZE ? 100 + pos : pos;
     if (newPos >= 1 && newPos <= BOARD_SIZE) {
       const myG = globalPos(seat, newPos);
       if (!isSafeSquare(myG)) {
-        // Bonus for capturing the player's piece
-        for (let pp = 0; pp < PIECES; pp++) {
-          const pPos = pieces[0][pp];
-          if (pPos >= 1 && pPos <= BOARD_SIZE && globalPos(0, pPos) === myG) score = 200;
+        // Bonus for landing on any player-team piece
+        for (let s = 0; s < ts; s++) {
+          if (!isPlayerSeat(s, state)) continue;
+          for (let pp = 0; pp < PIECES; pp++) {
+            const pPos = pieces[s][pp];
+            if (pPos >= 1 && pPos <= BOARD_SIZE && globalPos(s, pPos) === myG) score = 200;
+          }
         }
       }
     }
@@ -121,43 +154,66 @@ function aiPickPiece(pieces: AllPieces, seat: number, dice: number): number {
   return best;
 }
 
-function runAITurnsTracked(state: GameState): { dice: number; moved: boolean } {
-  const totalSeats = 1 + state.aiCount;
+function runAITurnsTracked(state: GameState): { dice: number; moved: boolean; capturedPlayer: boolean } {
+  const ts = getTotalSeats(state);
   let firstDice = 0;
   let moved = false;
-  let maxIter = 20;
+  let capturedPlayer = false;
+  let maxIter = 40;
+  let consecutiveSixes = 0;
+
   while (!state.finished && maxIter-- > 0) {
-    const seat = state.currentSeat === 0 ? 1 : state.currentSeat;
-    if (seat >= totalSeats) { state.currentSeat = 0; break; }
-    state.currentSeat = seat;
+    if (isPlayerSeat(state.currentSeat, state)) break;
+    const seat = state.currentSeat;
     const dice = rollDice();
     if (firstDice === 0) firstDice = dice;
-    if (!hasValidMove(state.pieces[seat], dice)) {
-      state.currentSeat = (seat + 1 >= totalSeats) ? 0 : seat + 1;
-      if (state.currentSeat === 0) break;
-      continue;
-    }
-    const pick = aiPickPiece(state.pieces, seat, dice);
-    if (pick === 255) {
-      state.currentSeat = (seat + 1 >= totalSeats) ? 0 : seat + 1;
-      if (state.currentSeat === 0) break;
-      continue;
-    }
-    const from = state.pieces[seat][pick];
-    applyMove(state.pieces, seat, pick, from === AT_BASE ? 1 : from + dice, totalSeats);
-    moved = true;
-    if (isAllFinished(state.pieces[seat])) {
-      state.finished  = true;
-      state.playerWon = false;
-      return { dice: firstDice, moved };
-    }
-    state.currentSeat = (seat + 1 >= totalSeats) ? 0 : seat + 1;
-    if (state.currentSeat === 0) break;
-  }
-  return { dice: firstDice, moved };
-}
 
-function runAITurns(state: GameState): void { runAITurnsTracked(state); }
+    let piecesMoved = false;
+    if (hasValidMove(state.pieces[seat], dice)) {
+      const pick = aiPickPiece(state.pieces, seat, dice, state);
+      if (pick !== 255) {
+        const from = state.pieces[seat][pick];
+        const newPos = from === AT_BASE ? 1 : from + dice;
+        // Detect capture of player pieces before applying
+        if (newPos >= 1 && newPos <= BOARD_SIZE) {
+          const gPos = globalPos(seat, newPos);
+          if (!isSafeSquare(gPos)) {
+            for (let s = 0; s < ts; s++) {
+              if (!isPlayerSeat(s, state)) continue;
+              for (let pp = 0; pp < PIECES; pp++) {
+                const pPos = state.pieces[s][pp];
+                if (pPos >= 1 && pPos <= BOARD_SIZE && globalPos(s, pPos) === gPos)
+                  capturedPlayer = true;
+              }
+            }
+          }
+        }
+        applyMove(state.pieces, seat, pick, newPos, ts);
+        piecesMoved = true;
+        moved = true;
+        if (isAITeamWon(state.pieces, seat, state)) {
+          state.finished  = true;
+          state.playerWon = false;
+          return { dice: firstDice, moved, capturedPlayer };
+        }
+      }
+    }
+
+    // Extra turn for rolling 6 (max 2 consecutive extras)
+    if (state.localRules && dice === 6 && piecesMoved) {
+      consecutiveSixes++;
+      if (consecutiveSixes < 3) continue;
+      consecutiveSixes = 0;
+    } else {
+      consecutiveSixes = 0;
+    }
+
+    // Advance to next seat
+    state.currentSeat = (seat + 1) % ts;
+  }
+
+  return { dice: firstDice, moved, capturedPlayer };
+}
 
 // ── Public API ────────────────────────────────────────────────────────────
 
@@ -167,27 +223,34 @@ export function performRoll(state: GameState): { state: GameState; dice: number 
   return { state: { ...state, lastDice: dice, diceRolled: true }, dice };
 }
 
-/** Apply a player piece move. Does NOT run AI turns — call advanceAI() next. */
+/**
+ * Apply the player's piece move for the current player seat.
+ * Advances currentSeat after the move (stays on same seat if dice=6 in local rules).
+ * Does NOT run AI turns — call advanceAI() after.
+ */
 export function performMove(
   state: GameState,
   pieceIdx: number,
 ): { state: GameState; valid: boolean; captured: boolean } {
-  if (!state.diceRolled || state.currentSeat !== 0 || state.finished)
+  const activeSeat = state.currentSeat;
+  if (!state.diceRolled || !isPlayerSeat(activeSeat, state) || state.finished)
     return { state, valid: false, captured: false };
-  const pos = state.pieces[0][pieceIdx];
+
+  const pos = state.pieces[activeSeat][pieceIdx];
   if (!isPieceMovable(pos, state.lastDice))
     return { state, valid: false, captured: false };
 
-  const newPos      = pos === AT_BASE ? 1 : pos + state.lastDice;
-  const totalSeats  = 1 + state.aiCount;
-  const next        = deepCopy(state);
+  const newPos = pos === AT_BASE ? 1 : pos + state.lastDice;
+  const ts     = getTotalSeats(state);
+  const next   = deepCopy(state);
 
-  // Detect capture before applying move
+  // Detect capture before applying
   let captured = false;
   if (newPos >= 1 && newPos <= BOARD_SIZE) {
-    const gPos = globalPos(0, newPos);
+    const gPos = globalPos(activeSeat, newPos);
     if (!isSafeSquare(gPos)) {
-      for (let s = 1; s < totalSeats; s++) {
+      for (let s = 0; s < ts; s++) {
+        if (isPlayerSeat(s, state)) continue;
         for (let p = 0; p < PIECES; p++) {
           const ep = next.pieces[s][p];
           if (ep >= 1 && ep <= BOARD_SIZE && globalPos(s, ep) === gPos) captured = true;
@@ -196,10 +259,17 @@ export function performMove(
     }
   }
 
-  applyMove(next.pieces, 0, pieceIdx, newPos, totalSeats);
+  applyMove(next.pieces, activeSeat, pieceIdx, newPos, ts);
   next.diceRolled = false;
 
-  if (isAllFinished(next.pieces[0])) {
+  // Extra turn for rolling 6 in local mode; otherwise advance seat
+  if (state.localRules && state.lastDice === 6) {
+    next.currentSeat = activeSeat;  // stay — bonus roll
+  } else {
+    next.currentSeat = (activeSeat + 1) % ts;
+  }
+
+  if (isPlayerTeamWon(next.pieces, next)) {
     next.finished  = true;
     next.playerWon = true;
   }
@@ -207,17 +277,20 @@ export function performMove(
   return { state: next, valid: true, captured };
 }
 
-/** Run one round of AI turns and return the new state plus the first AI's dice roll. */
-export function advanceAI(state: GameState): { state: GameState; aiDice: number; moved: boolean } {
-  if (state.finished) return { state, aiDice: 0, moved: false };
+/** Run one batch of AI turns (stops when the next player seat is reached). */
+export function advanceAI(
+  state: GameState,
+): { state: GameState; aiDice: number; moved: boolean; capturedPlayer: boolean } {
+  if (state.finished) return { state, aiDice: 0, moved: false, capturedPlayer: false };
   const next = deepCopy(state);
-  const { dice: aiDice, moved } = runAITurnsTracked(next);
-  return { state: next, aiDice, moved };
+  const { dice: aiDice, moved, capturedPlayer } = runAITurnsTracked(next);
+  return { state: next, aiDice, moved, capturedPlayer };
 }
 
-/** When player rolls and has no valid move, skip their turn (no AI — call advanceAI separately). */
+/** Skip the current player's turn (no valid move). Advances to next seat. */
 export function skipTurn(state: GameState): GameState {
   const next = deepCopy(state);
-  next.diceRolled = false;
+  next.diceRolled  = false;
+  next.currentSeat = (state.currentSeat + 1) % getTotalSeats(state);
   return next;
 }
