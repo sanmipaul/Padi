@@ -109,9 +109,13 @@ function deepCopy(state: GameState): GameState {
   };
 }
 
-function capture(pieces: AllPieces, attackerSeat: number, gPos: number, ts: number): void {
+function capture(pieces: AllPieces, attackerSeat: number, gPos: number, ts: number, doubleBoard: boolean): void {
+  // In double-board mode: player owns even seats (0,2), AI owns odd seats (1,3).
+  // Same-team pieces stack — they never capture each other.
+  const attackerIsOdd = attackerSeat % 2 === 1;
   for (let s = 0; s < ts; s++) {
     if (s === attackerSeat) continue;
+    if (doubleBoard && (s % 2 === 1) === attackerIsOdd) continue;
     for (let p = 0; p < PIECES; p++) {
       const pos = pieces[s][p];
       if (pos === 0 || pos > BOARD_SIZE) continue;
@@ -120,11 +124,11 @@ function capture(pieces: AllPieces, attackerSeat: number, gPos: number, ts: numb
   }
 }
 
-function applyMove(pieces: AllPieces, seat: number, idx: number, newPos: number, ts: number): void {
+function applyMove(pieces: AllPieces, seat: number, idx: number, newPos: number, ts: number, doubleBoard: boolean): void {
   pieces[seat][idx] = newPos;
   if (newPos >= 1 && newPos <= BOARD_SIZE) {
     const gPos = globalPos(seat, newPos);
-    if (!isSafeSquare(gPos)) capture(pieces, seat, gPos, ts);
+    if (!isSafeSquare(gPos)) capture(pieces, seat, gPos, ts, doubleBoard);
   }
 }
 
@@ -188,7 +192,7 @@ function runAITurnsTracked(state: GameState): { dice: number; moved: boolean; ca
             }
           }
         }
-        applyMove(state.pieces, seat, pick, newPos, ts);
+        applyMove(state.pieces, seat, pick, newPos, ts, state.localRules && state.aiCount === 1);
         piecesMoved = true;
         moved = true;
         if (isAITeamWon(state.pieces, seat, state)) {
@@ -259,7 +263,7 @@ export function performMove(
     }
   }
 
-  applyMove(next.pieces, activeSeat, pieceIdx, newPos, ts);
+  applyMove(next.pieces, activeSeat, pieceIdx, newPos, ts, state.localRules && state.aiCount === 1);
   next.diceRolled = false;
 
   // Extra turn for rolling 6 in local mode; otherwise advance seat
